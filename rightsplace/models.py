@@ -33,10 +33,30 @@ class UserProfile(models.Model):
     # Optional contact details
     organization = models.CharField(max_length=100, blank=True, null=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True,
+                              help_text="Optional contact email for communication and verification purposes.")
+    is_verified = models.BooleanField(
+        default=False,
+        help_text="Mark as verified after admin approval (applies to NGOs and Lawyers)."
+    )
     location = models.CharField(max_length=100, blank=True, null=True)
 
     # Record creation time
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def clean(self):
+        """Ensure only NGOs and Lawyers can be marked as verified"""
+        from django.core.exceptions import ValidationError
+        if self.role == 'user' and self.is_verified:
+            raise ValidationError(
+                "Only NGOs and Lawyers can be verified."
+            )
+
+    @property
+    def verified_status(self):
+        """Return human-readable verification status."""
+        return "Verified" if self.is_verified else "Unverified"
+
 
     def __str__(self):
         """Return a readable string representation of the profile."""
@@ -70,6 +90,19 @@ class Report(models.Model):
     # Current case status (defaults to Pending)
     status = models.CharField(
         max_length=20, choices=STATUS_CHOICES, default='pending'
+    )
+
+    # Category of cases (optiona)
+    CATEGORY_CHOICES = [
+        ('HR', 'Human Rights'),
+        ('GV', 'Gender Violence'),
+        ('DV', 'Domestic Violence'),
+        ('WL', 'Whistleblowing'),
+        ('OT', 'Other'),
+    ]
+
+    category = models.CharField(
+        max_length=20, choices=CATEGORY_CHOICES, default='OT'
     )
 
     # Auto timestamps
