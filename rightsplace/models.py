@@ -16,7 +16,8 @@ from django.contrib.auth.models import User
 class UserProfile(models.Model):
     """
     Extends Django's built-in User model to store additional user information.
-    This model helps differentiate between user roles (e.g., Lawyer, NGO).
+    Differentiates between Lawyers, NGOs, and Regular Users, with optional
+    verification and contact preferences.
     """
     ROLE_CHOICES = [
         ('lawyer', 'Lawyer'),
@@ -24,43 +25,74 @@ class UserProfile(models.Model):
         ('user', 'Regular User'),
     ]
 
-    # Relationship with the built-in User model
+    # Relationship with Django User
     user = models.OneToOneField(User, on_delete=models.CASCADE)
 
-    # Role helps us know what kind of user this is
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
+    # Role classification
+    role = models.CharField(
+        max_length=20, choices=ROLE_CHOICES, default='user')
 
-    # Optional contact details
-    organization = models.CharField(max_length=100, blank=True, null=True)
-    phone_number = models.CharField(max_length=20, blank=True, null=True)
-    email = models.EmailField(blank=True, null=True,
-                              help_text="Optional contact email for communication and verification purposes.")
+    # Contact and organizational details
+    organization_name = models.CharField(
+        max_length=100, blank=True, null=True,
+        help_text="Organization name (required for NGOs)."
+    )
+    phone_number = models.CharField(
+        max_length=20, blank=True, null=True,
+        help_text="Optional phone contact."
+    )
+    email = models.EmailField(
+        blank=True, null=True,
+        help_text="Optional contact email for communication and verification."
+    )
+    location = models.CharField(max_length=100, blank=True, null=True)
+
+    # User preferences
+    wants_contact = models.BooleanField(
+        default=False,
+        help_text="If true, user is willing to be contacted about their report."
+    )
+
+    # Verification flag (for NGOs/Lawyers only)
     is_verified = models.BooleanField(
         default=False,
         help_text="Mark as verified after admin approval (applies to NGOs and Lawyers)."
     )
-    location = models.CharField(max_length=100, blank=True, null=True)
 
-    # Record creation time
+    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # -------------------------------------------------------------------------
+    # Validation & representation
+    # -------------------------------------------------------------------------
     def clean(self):
-        """Ensure only NGOs and Lawyers can be marked as verified"""
+        """Ensure role-based rules are respected."""
         from django.core.exceptions import ValidationError
+
+        # Only NGOs and Lawyers can be verified
         if self.role == 'user' and self.is_verified:
+            raise ValidationError("Only NGOs and Lawyers can be verified.")
+
+        # NGOs must have organization_name
+        if self.role == 'ngo' and not self.organization_name:
             raise ValidationError(
-                "Only NGOs and Lawyers can be verified."
-            )
+                "NGO Representatives must provide an organization name.")
+
+        # Lawyers and NGOs must have contact info
+        if self.role in ['lawyer', 'ngo']:
+            if not self.email or not self.phone_number:
+                raise ValidationError(
+                    "Lawyers and NGOs must provide both email and phone number.")
 
     @property
     def verified_status(self):
         """Return human-readable verification status."""
         return "Verified" if self.is_verified else "Unverified"
 
-
     def __str__(self):
-        """Return a readable string representation of the profile."""
+        """Readable name for admin and debugging."""
         return f"{self.user.username} ({self.role})"
+
 
 
 class Report(models.Model):

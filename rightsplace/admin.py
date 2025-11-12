@@ -38,10 +38,17 @@ class UserProfileAdmin(admin.ModelAdmin):
     """
     Customizes how user profiles are managed in the admin panel.
     """
-    list_display = ('user', 'role', 'is_verified', 'phone_number', 'email')
-    list_filter = ('role', 'is_verified')
-    search_fields = ('user__username', 'email', 'phone_number')
+    list_display = (
+        'user', 'role', 'organization_name', 'is_verified',
+        'wants_contact', 'phone_number', 'email'
+    )
+    list_filter = ('role', 'is_verified', 'wants_contact')
+    search_fields = (
+        'user__username', 'user__first_name', 'user__last_name',
+        'email', 'phone_number', 'organization_name'
+    )
     list_editable = ('is_verified',)
+
 
 
 @admin.register(Case)
