@@ -164,6 +164,58 @@ class ReporterRegistrationForm(forms.ModelForm):
         return profile
 
 
+# -----------------------------------------------------------------------------
+# Authenticated User Report Form
+# -----------------------------------------------------------------------------
+class AuthenticatedReportForm(forms.ModelForm):
+    """
+    Form used by logged-in users to submit a report.
+    - Reporter is automatically assigned from request.user
+    - No contact_email/contact_phone fields (taken from user profile).
+    - Evidence upload is supported.
+    """
+
+    evidence_files = forms.FileField(
+        required=False,
+        widget=FILE_INPUT,
+        help_text="Upload any supporting evidence.",
+    )
+
+    class Meta:
+        model = Report
+        fields = ["title", "description", "category", "incident_location"]
+        widgets = {
+            "title": TEXT_INPUT,
+            "description": TEXTAREA,
+            "category": SELECT,
+            "incident_location": TEXT_INPUT,
+        }
+
+    def save(self, commit=True, reporter=None):
+        """
+        Saves the report and attaches the authenticated reporter profile.
+        Evidence file (if included) is saved in the Evidence model.
+        """
+
+        if reporter is None:
+            raise ValueError(
+                "AuthenticatedReportForm requires a reporter instance.")
+
+        report = super().save(commit=False)
+        report.reporter = reporter
+
+        if commit:
+            report.save()
+
+        # Save evidence if provided
+        file_obj = self.cleaned_data.get("evidence_files")
+        if file_obj:
+            Evidence.objects.create(report=report, file=file_obj)
+
+        return report
+
+
+
 # -------------------------------------------------------------------------
 # Anonymous Report Form
 # -------------------------------------------------------------------------
