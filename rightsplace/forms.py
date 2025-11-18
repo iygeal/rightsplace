@@ -1,99 +1,162 @@
+"""
+Forms for the RightsPlace platform.
+
+This file contains:
+ - LoginForm
+ - ReporterRegistrationForm
+ - AnonymousReportForm
+ - LawyerRegistrationForm
+ - NGORegistrationForm
+"""
+
 from django import forms
+from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
-from django.contrib.auth.forms import AuthenticationForm
+from django.core.exceptions import ValidationError
 from .models import UserProfile, Report, Evidence
 
 
-class UserRegistrationForm(forms.ModelForm):
+# -------------------------------------------------------------------------
+# Login Form
+# -------------------------------------------------------------------------
+class LoginForm(forms.Form):
     """
-    Handles registration for all user types (Regular User, Lawyer, NGO).
-    Combines Django's User model and custom UserProfile fields.
+    Custom login form allowing authentication via username or email.
+    """
+    identifier = forms.CharField(
+        label="Username or Email",
+        widget=forms.TextInput(
+            attrs={'placeholder': 'Enter username or email'})
+    )
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'placeholder': 'Enter password'})
+    )
+
+    def clean(self):
+        """
+        Attempt authentication using:
+            1. identifier as username
+            2. identifier as email → translated to username
+        """
+        cleaned = super().clean()
+        identifier = cleaned.get("identifier")
+        password = cleaned.get("password")
+
+        if identifier and password:
+            # Try logging in with username
+            user = authenticate(username=identifier, password=password)
+
+            if user is None:
+                # Try interpreting identifier as email
+                try:
+                    user_obj = User.objects.get(email=identifier)
+                    user = authenticate(
+                        username=user_obj.username, password=password)
+                except User.DoesNotExist:
+                    pass
+
+            if user is None:
+                raise ValidationError("Invalid username/email or password.")
+
+            cleaned["user"] = user
+
+        return cleaned
+
+
+# -------------------------------------------------------------------------
+# Bootstrap Widgets
+# -------------------------------------------------------------------------
+TEXT_INPUT = forms.TextInput(attrs={"class": "form-control"})
+EMAIL_INPUT = forms.EmailInput(attrs={"class": "form-control"})
+PASSWORD_INPUT = forms.PasswordInput(attrs={"class": "form-control"})
+TEXTAREA = forms.Textarea(attrs={"class": "form-control", "rows": 4})
+SELECT = forms.Select(attrs={"class": "form-select"})
+FILE_INPUT = forms.ClearableFileInput(attrs={"class": "form-control"})
+CHECKBOX = forms.CheckboxInput(attrs={"class": "form-check-input"})
+
+
+# -------------------------------------------------------------------------
+# Reporter Registration Form
+# -------------------------------------------------------------------------
+class ReporterRegistrationForm(forms.ModelForm):
+    """
+    Registration for regular reporters (non-lawyers, non-NGO).
+
+    Behavior:
+    - Users may choose to remain anonymous.
+    - If wants_contact=True → require name + email + phone.
+    - If wants_contact=False → these fields may remain blank.
     """
 
-    first_name = forms.CharField(max_length=50, required=False)
-    last_name = forms.CharField(max_length=50, required=False)
-    username = forms.CharField(max_length=50, required=True)
-    email = forms.EmailField(required=True)
-    password = forms.CharField(widget=forms.PasswordInput(), required=True)
+    username = forms.CharField(widget=TEXT_INPUT)
+    password = forms.CharField(widget=PASSWORD_INPUT)
 
-    # Custom UserProfile fields
-    role = forms.ChoiceField(choices=UserProfile.ROLE_CHOICES, required=True)
-    organization_name = forms.CharField(
-        max_length=100, required=False, help_text="Required only for NGO representatives."
-    )
-    phone_number = forms.CharField(
-        max_length=20, required=False, help_text="Optional contact number."
-    )
-    location = forms.CharField(max_length=100, required=False)
+    first_name = forms.CharField(required=False, widget=TEXT_INPUT)
+    last_name = forms.CharField(required=False, widget=TEXT_INPUT)
+    email = forms.EmailField(required=False, widget=EMAIL_INPUT)
+    phone_number = forms.CharField(required=False, widget=TEXT_INPUT)
+
     wants_contact = forms.BooleanField(
         required=False,
-        label="I want to be contacted for follow-up on reports.",
+        widget=CHECKBOX,
+        help_text="Check if you want us to contact you for follow-up."
     )
 
     class Meta:
         model = UserProfile
-        fields = [
-            'first_name', 'last_name', 'username', 'email', 'password',
-            'role', 'organization_name', 'phone_number', 'location', 'wants_contact'
-        ]
+        fields = ["role", "email", "phone_number", "wants_contact"]
+        widgets = {
+            "role": forms.HiddenInput(),
+        }
+
+    def __init__(self, *args, **kwargs):
+        """
+        Initializes the form by setting the role to "user".
+
+        :param args: arguments passed to the form
+        :param kwargs: keyword arguments passed to the form
+        """
+        super().__init__(*args, **kwargs)
+        self.fields["role"].initial = "user"
 
     def clean(self):
         """
-        Enforce required fields based on role and contact preference.
+        Enforces role-based validation rules.
+
+        If wants_contact=True, require first name, last name, email, and phone number.
         """
-        cleaned_data = super().clean()
-        role = cleaned_data.get('role')
-        wants_contact = cleaned_data.get('wants_contact')
-        org_name = cleaned_data.get('organization_name')
+        cleaned = super().clean()
+        wants_contact = cleaned.get("wants_contact")
 
-        # NGO: Must have organization name and contact info
-        if role == 'ngo':
-            if not org_name:
-                self.add_error(
-                    'organization_name', "Organization name is required for NGO representatives.")
-            if not cleaned_data.get('email'):
-                self.add_error(
-                    'email', "Email is required for NGO representatives.")
+        if wants_contact:
+            required_fields = ["first_name",
+                               "last_name", "email", "phone_number"]
+            for f in required_fields:
+                if not self.cleaned_data.get(f):
+                    raise ValidationError(
+                        f"{f.replace('_', ' ').title()} is required.")
 
-        # Lawyer: Must provide contact info
-        if role == 'lawyer':
-            if not cleaned_data.get('email'):
-                self.add_error('email', "Email is required for Lawyers.")
-            if not cleaned_data.get('phone_number'):
-                self.add_error(
-                    'phone_number', "Phone number is required for Lawyers.")
-
-        # Regular user with 'wants_contact' must provide at least one contact field
-        if role == 'user' and wants_contact:
-            if not (cleaned_data.get('email') or cleaned_data.get('phone_number')):
-                self.add_error(
-                    None, "Please provide at least one contact detail if you want to be contacted.")
-
-        return cleaned_data
+        return cleaned
 
     def save(self, commit=True):
         """
-        Creates both User and associated UserProfile records.
+        Creates:
+        - Django User object
+        - UserProfile with role='user'
         """
         user = User.objects.create_user(
-            username=self.cleaned_data['username'],
-            password=self.cleaned_data['password'],
-            first_name=self.cleaned_data['first_name'],
-            last_name=self.cleaned_data['last_name'],
-            email=self.cleaned_data['email'],
+            username=self.cleaned_data["username"],
+            password=self.cleaned_data["password"],
+            first_name=self.cleaned_data.get("first_name", ""),
+            last_name=self.cleaned_data.get("last_name", ""),
+            email=self.cleaned_data.get("email", "")
         )
 
-        profile = UserProfile(
-            user=user,
-            role=self.cleaned_data['role'],
-            organization_name=self.cleaned_data.get('organization_name', ''),
-            phone_number=self.cleaned_data.get('phone_number', ''),
-            email=self.cleaned_data.get('email', ''),
-            location=self.cleaned_data.get('location', ''),
-        )
-
-        # Store the contact preference
-        profile.wants_contact = self.cleaned_data.get('wants_contact', False)
+        profile = super().save(commit=False)
+        profile.user = user
+        profile.role = "user"
+        profile.email = self.cleaned_data.get("email")
+        profile.phone_number = self.cleaned_data.get("phone_number")
 
         if commit:
             profile.save()
@@ -101,71 +164,182 @@ class UserRegistrationForm(forms.ModelForm):
         return profile
 
 
-class ReportForm(forms.ModelForm):
+# -------------------------------------------------------------------------
+# Anonymous Report Form
+# -------------------------------------------------------------------------
+class AnonymousReportForm(forms.ModelForm):
     """
-    Handles submission of human rights abuse reports.
-    Reporters can remain anonymous or choose to be contacted.
+    Form for submitting reports without registration.
+
+    Contact fields and evidence are optional but encouraged.
     """
+
+    contact_email = forms.EmailField(required=False, widget=EMAIL_INPUT)
+    contact_phone = forms.CharField(required=False, widget=TEXT_INPUT)
+
+    evidence_files = forms.FileField(
+        required=False,
+        widget=FILE_INPUT,
+        help_text="Upload supporting evidence (photo, video, document)."
+    )
 
     class Meta:
         model = Report
-        fields = [
-            'title', 'description', 'incident_location', 'incident_date', 'category'
-        ]
+        fields = ["title", "description", "category", "incident_location"]
         widgets = {
-            'description': forms.Textarea(attrs={'rows': 4}),
-            'incident_date': forms.DateInput(attrs={'type': 'date'}),
+            "title": TEXT_INPUT,
+            "description": TEXTAREA,
+            "category": SELECT,
+            "incident_location": TEXT_INPUT,
         }
 
-    def clean(self):
-        """
-        Encourage valid evidence and ensure meaningful details.
-        """
-        cleaned_data = super().clean()
-        description = cleaned_data.get('description')
+    def save(self, commit=True):
+        report = super().save(commit)
 
-        if len(description.strip()) < 30:
-            self.add_error(
-                'description', "Please provide a more detailed description of the incident.")
+        file_obj = self.cleaned_data.get("evidence_files")
+        if file_obj:
+            Evidence.objects.create(report=report, file=file_obj)
 
-        return cleaned_data
+        return report
 
 
-class EvidenceForm(forms.ModelForm):
+# -------------------------------------------------------------------------
+# Lawyer Registration Form
+# -------------------------------------------------------------------------
+class LawyerRegistrationForm(forms.ModelForm):
     """
-    Handles uploading of files supporting a Report.
-    Evidence is optional but highly encouraged.
+    Registration for lawyers.
+
+    Required:
+    - First name, last name
+    - Email
+    - Phone number
+    - Enrolment number
+
+    Optional:
+    - Specialization
+    - City / State
     """
+
+    username = forms.CharField(widget=TEXT_INPUT)
+    password = forms.CharField(widget=PASSWORD_INPUT)
+
+    first_name = forms.CharField(widget=TEXT_INPUT)
+    last_name = forms.CharField(widget=TEXT_INPUT)
+    email = forms.EmailField(widget=EMAIL_INPUT)
+    phone_number = forms.CharField(widget=TEXT_INPUT)
+
+    enrolment_number = forms.CharField(widget=TEXT_INPUT)
+    specialization = forms.CharField(required=False, widget=TEXT_INPUT)
+    city = forms.CharField(required=False, widget=TEXT_INPUT)
+    state = forms.CharField(required=False, widget=TEXT_INPUT)
 
     class Meta:
-        model = Evidence
-        fields = ['file', 'caption']
+        model = UserProfile
+        fields = [
+            "role", "email", "phone_number",
+            "enrolment_number", "specialization",
+            "city", "state", "is_verified"
+        ]
+        widgets = {
+            "role": forms.HiddenInput(),
+            "is_verified": forms.HiddenInput(),
+        }
 
-
-class UserLoginForm(AuthenticationForm):
-    """
-    Custom login form allowing users to authenticate using either
-    their username or email address.
-    """
-    username = forms.CharField(
-        label="Username or Email",
-        widget=forms.TextInput(attrs={'autofocus': True})
-    )
-    password = forms.CharField(widget=forms.PasswordInput())
-
-    def clean(self):
+    def __init__(self, *args, **kwargs):
         """
-        Override authentication to allow login via email.
+        Initializes the form by setting the role to "lawyer" and
+        is_verified to False.
+
+        :param args: arguments passed to the form
+        :param kwargs: keyword arguments passed to the form
         """
-        cleaned_data = super().clean()
-        username_or_email = cleaned_data.get('username')
+        super().__init__(*args, **kwargs)
+        self.fields["role"].initial = "lawyer"
+        self.fields["is_verified"].initial = False
 
-        if username_or_email:
-            try:
-                user_obj = User.objects.get(email__iexact=username_or_email)
-                # replace with username for auth
-                cleaned_data['username'] = user_obj.username
-            except User.DoesNotExist:
-                pass  # if no email match, Django will handle normal username auth
+    def save(self, commit=True):
+        user = User.objects.create_user(
+            username=self.cleaned_data["username"],
+            password=self.cleaned_data["password"],
+            first_name=self.cleaned_data["first_name"],
+            last_name=self.cleaned_data["last_name"],
+            email=self.cleaned_data["email"],
+        )
 
-        return cleaned_data
+        profile = super().save(commit=False)
+        profile.user = user
+        profile.role = "lawyer"
+
+        if commit:
+            profile.save()
+
+        return profile
+
+
+# -------------------------------------------------------------------------
+# NGO Registration Form
+# -------------------------------------------------------------------------
+class NGORegistrationForm(forms.ModelForm):
+    """
+    Registration for NGOs.
+
+    Required:
+    - Contact person's first & last names
+    - Organization name
+    - RC number
+    - Email & phone
+
+    Optional:
+    - City
+    - State
+    """
+
+    username = forms.CharField(widget=TEXT_INPUT)
+    password = forms.CharField(widget=PASSWORD_INPUT)
+
+    first_name = forms.CharField(label="Contact First Name", widget=TEXT_INPUT)
+    last_name = forms.CharField(label="Contact Last Name", widget=TEXT_INPUT)
+
+    email = forms.EmailField(widget=EMAIL_INPUT)
+    phone_number = forms.CharField(widget=TEXT_INPUT)
+
+    organization_name = forms.CharField(widget=TEXT_INPUT)
+    rc_number = forms.CharField(label="RC Number", widget=TEXT_INPUT)
+
+    city = forms.CharField(required=False, widget=TEXT_INPUT)
+    state = forms.CharField(required=False, widget=TEXT_INPUT)
+
+    class Meta:
+        model = UserProfile
+        fields = [
+            "role", "organization_name", "rc_number",
+            "email", "phone_number", "city", "state", "is_verified"
+        ]
+        widgets = {
+            "role": forms.HiddenInput(),
+            "is_verified": forms.HiddenInput(),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["role"].initial = "ngo"
+        self.fields["is_verified"].initial = False
+
+    def save(self, commit=True):
+        user = User.objects.create_user(
+            username=self.cleaned_data["username"],
+            password=self.cleaned_data["password"],
+            first_name=self.cleaned_data["first_name"],
+            last_name=self.cleaned_data["last_name"],
+            email=self.cleaned_data["email"],
+        )
+
+        profile = super().save(commit=False)
+        profile.user = user
+        profile.role = "ngo"
+
+        if commit:
+            profile.save()
+
+        return profile
