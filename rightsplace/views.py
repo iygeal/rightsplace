@@ -1,6 +1,14 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 
-def home(request):
-    """Simple homepage view"""
-    return HttpResponse("Welcome to RightsPlace! The backend is running successfully.")
+
+def index(request):
+    """
+    Landing page for RightsPlace.
+
+    Displays:
+    - Reporting buttons
+    - Basic explanation of platform
+    - Quick links to anonymous report and registration
+    """
+    return render(request, "rightsplace/index.html")

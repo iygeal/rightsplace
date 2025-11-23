@@ -1,0 +1,61 @@
+{% extends "rightsplace/layout.html" %}
+
+{% block title %}RightsPlace — Home{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+
+    <!-- Hero Section -->
+    <div class="text-center py-5">
+        <h1 class="display-4 fw-bold">Welcome to RightsPlace</h1>
+        <p class="lead mt-3">
+            A safe platform for reporting human rights abuses and connecting with verified legal and NGO support.
+        </p>
+        <div class="mt-4">
+            <a href="{% url 'report_anonymous' %}" class="btn btn-danger btn-lg me-2">
+                Report Anonymously
+            </a>
+            <a href="{% url 'register' %}" class="btn btn-primary btn-lg">
+                Create an Account
+            </a>
+        </div>
+    </div>
+
+    <!-- About Section -->
+    <div class="row mt-5">
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title fw-bold">Secure Reporting</h5>
+                    <p class="card-text">
+                        Submit reports anonymously or with your contact details. Your safety is our priority.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mt-4 mt-md-0">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title fw-bold">Verified Lawyers & NGOs</h5>
+                    <p class="card-text">
+                        We connect you with authenticated human rights lawyers and trusted organizations.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mt-4 mt-md-0">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title fw-bold">Track Case Progress</h5>
+                    <p class="card-text">
+                        Registered users can view updates as their cases are reviewed and handled.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
