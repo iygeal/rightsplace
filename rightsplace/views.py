@@ -2,10 +2,12 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.http import HttpResponse
+from django.urls import reverse
 from .forms import (
     ReporterRegistrationForm,
     LawyerRegistrationForm,
     NGORegistrationForm,
+    LoginForm,
 )
 
 
@@ -101,3 +103,45 @@ def register(request):
             "ngo_form": ngo_form,
         },
     )
+
+
+def login_view(request):
+    """
+    Handles user login using the custom LoginForm.
+    - Accepts username OR email
+    - On success → redirects to index
+    - On failure → re-renders with error message
+    """
+
+    if request.method == "POST":
+        form = LoginForm(request.POST)
+
+        if form.is_valid():
+            user = form.cleaned_data["user"]
+            login(request, user)
+            messages.success(request, "You are now logged in.")
+            return redirect("index")
+
+        else:
+            messages.error(request, "Invalid login details.")
+    else:
+        form = LoginForm()
+
+    context = {
+        "form": form,
+    }
+
+    return render(request, "rightsplace/login.html", context)
+
+
+
+# ------------------------------------------
+# LOGOUT VIEW
+# ------------------------------------------
+def logout_view(request):
+    """
+    Logs the user out and redirects to index with a message.
+    """
+    logout(request)
+    messages.info(request, "You have been logged out.")
+    return redirect("index")

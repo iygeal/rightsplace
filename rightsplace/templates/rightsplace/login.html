@@ -1,0 +1,43 @@
+{% extends "rightsplace/layout.html" %}
+{% load static %}
+
+{% block title %}Login — RightsPlace{% endblock %}
+
+{% block content %}
+
+<div class="container py-4" style="max-width: 500px;">
+
+    <h2 class="mb-4 fw-bold text-center">Login</h2>
+
+    <!-- Messages -->
+    {% if messages %}
+        <div class="mb-3">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="card p-4 shadow-sm">
+
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+
+            <button class="btn btn-primary w-100 mt-3">
+                Login
+            </button>
+        </form>
+
+        <p class="text-center mt-3">
+            Don't have an account?
+            <a href="{% url 'register' %}">Register here</a>
+        </p>
+
+    </div>
+
+</div>
+
+{% endblock %}

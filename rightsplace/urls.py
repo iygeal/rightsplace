@@ -13,7 +13,7 @@ urlpatterns = [
     # Temporary placeholders to stop template errors
     path('report/anonymous/', placeholder, name='report_anonymous'),
     path('report/create/', placeholder, name='report_create'),
-    path('login/', placeholder, name='login'),
+    path('login/', views.login_view, name='login'),
     path('register/', views.register, name='register'),
-    path('logout/', placeholder, name='logout'),
+    path('logout/', views.logout_view, name='logout'),
 ]
