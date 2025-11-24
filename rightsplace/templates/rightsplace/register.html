@@ -1,0 +1,118 @@
+{% extends "rightsplace/layout.html" %}
+{% load static %}
+
+{% block title %}Register — RightsPlace{% endblock %}
+
+{% block extra_css %}
+<style>
+    .role-card {
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .role-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    .hidden {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+    <!-- Page Header -->
+    <div class="text-center mb-5">
+        <h1 class="fw-bold">Create an Account</h1>
+        <p class="text-muted">Choose the type of account you want to create</p>
+    </div>
+
+
+    <!-- Role Selection -->
+    <div class="row justify-content-center mb-4">
+
+        <!-- Reporter -->
+        <div class="col-md-3 mb-3">
+            <div class="card role-card text-center p-3" onclick="selectRole('user')">
+                <h5 class="fw-bold">Reporter</h5>
+                <p class="small text-muted">Submit reports and receive updates</p>
+            </div>
+        </div>
+
+        <!-- Lawyer -->
+        <div class="col-md-3 mb-3">
+            <div class="card role-card text-center p-3" onclick="selectRole('lawyer')">
+                <h5 class="fw-bold">Lawyer</h5>
+                <p class="small text-muted">Assist with cases and provide legal help</p>
+            </div>
+        </div>
+
+        <!-- NGO -->
+        <div class="col-md-3 mb-3">
+            <div class="card role-card text-center p-3" onclick="selectRole('ngo')">
+                <h5 class="fw-bold">NGO</h5>
+                <p class="small text-muted">Monitor reports and support victims</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+
+    <!-- ================================
+         FORMS (Initially Hidden)
+         ================================ -->
+
+    <!-- Reporter Form -->
+    <div id="form-user" class="hidden">
+        <div class="card shadow-sm p-4">
+            <h4 class="mb-4">Reporter Registration</h4>
+
+            <form method="post">
+                {% csrf_token %}
+                {{ reporter_form.as_p }}
+                <button class="btn btn-primary mt-3">Register</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lawyer Form -->
+    <div id="form-lawyer" class="hidden">
+        <div class="card shadow-sm p-4">
+            <h4 class="mb-4">Lawyer Registration</h4>
+
+            <form method="post">
+                {% csrf_token %}
+                {{ lawyer_form.as_p }}
+                <button class="btn btn-primary mt-3">Register</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- NGO Form -->
+    <div id="form-ngo" class="hidden">
+        <div class="card shadow-sm p-4">
+            <h4 class="mb-4">NGO Registration</h4>
+
+            <form method="post">
+                {% csrf_token %}
+                {{ ngo_form.as_p }}
+                <button class="btn btn-primary mt-3">Register</button>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% block script %}
+<script src="{% static 'rightsplace/register.js' %}"></script>
+{% endblock %}
+{% endblock %}

@@ -14,6 +14,6 @@ urlpatterns = [
     path('report/anonymous/', placeholder, name='report_anonymous'),
     path('report/create/', placeholder, name='report_create'),
     path('login/', placeholder, name='login'),
-    path('register/', placeholder, name='register'),
+    path('register/', views.register, name='register'),
     path('logout/', placeholder, name='logout'),
 ]
