@@ -8,6 +8,7 @@ from .forms import (
     LawyerRegistrationForm,
     NGORegistrationForm,
     LoginForm,
+    AnonymousReportForm,
 )
 
 
@@ -140,8 +141,34 @@ def login_view(request):
 # ------------------------------------------
 def logout_view(request):
     """
-    Logs the user out and redirects to index with a message.
+    Logs the user out and redirects to index.
     """
     logout(request)
     messages.info(request, "You have been logged out.")
     return redirect("index")
+
+
+def anonymous_report(request):
+    """
+    Allows users to submit a report anonymously.
+    Evidence upload supported.
+    Contact information optional.
+    """
+    if request.method == "POST":
+        form = AnonymousReportForm(request.POST, request.FILES)
+
+        if form.is_valid():
+            report = form.save()
+            messages.success(
+                request,
+                "Your anonymous report has been submitted successfully. Thank you for speaking up."
+            )
+            return redirect("report_anonymous")
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = AnonymousReportForm()
+
+    return render(request, "rightsplace/anonymous_report.html", {
+        "form": form
+    })
