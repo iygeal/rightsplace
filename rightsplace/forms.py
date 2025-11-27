@@ -71,7 +71,10 @@ EMAIL_INPUT = forms.EmailInput(attrs={"class": "form-control"})
 PASSWORD_INPUT = forms.PasswordInput(attrs={"class": "form-control"})
 TEXTAREA = forms.Textarea(attrs={"class": "form-control", "rows": 4})
 SELECT = forms.Select(attrs={"class": "form-select"})
-FILE_INPUT = forms.ClearableFileInput(attrs={"class": "form-control"})
+FILE_INPUT = forms.ClearableFileInput(attrs={
+    "class": "form-control",
+    "multiple": True
+    })
 CHECKBOX = forms.CheckboxInput(attrs={"class": "form-check-input"})
 
 
@@ -170,9 +173,6 @@ class ReporterRegistrationForm(forms.ModelForm):
 class AuthenticatedReportForm(forms.ModelForm):
     """
     Form used by logged-in users to submit a report.
-    - Reporter is automatically assigned from request.user
-    - No contact_email/contact_phone fields (taken from user profile).
-    - Evidence upload is supported.
     """
 
     evidence_files = forms.FileField(
@@ -191,10 +191,9 @@ class AuthenticatedReportForm(forms.ModelForm):
             "incident_location": TEXT_INPUT,
         }
 
-    def save(self, commit=True, reporter=None):
+    def save(self, commit=True, reporter=None, files=None):
         """
-        Saves the report and attaches the authenticated reporter profile.
-        Evidence file (if included) is saved in the Evidence model.
+        Saves the report, attaches reporter, and saves multiple evidence files.
         """
 
         if reporter is None:
@@ -207,12 +206,13 @@ class AuthenticatedReportForm(forms.ModelForm):
         if commit:
             report.save()
 
-        # Save evidence if provided
-        file_obj = self.cleaned_data.get("evidence_files")
-        if file_obj:
-            Evidence.objects.create(report=report, file=file_obj)
+        # Save evidence (multiple)
+        if files:
+            for file in files:
+                Evidence.objects.create(report=report, file=file)
 
         return report
+
 
 
 

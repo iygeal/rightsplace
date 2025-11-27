@@ -9,8 +9,6 @@ def placeholder(request):
 
 urlpatterns = [
     path('', views.index, name='index'),
-
-    # Temporary placeholders to stop template errors
     path('report/create/', placeholder, name='report_create'),
     path('login/', views.login_view, name='login'),
     path('register/', views.register, name='register'),

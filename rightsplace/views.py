@@ -1,14 +1,15 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth import login, logout
-from django.http import HttpResponse
-from django.urls import reverse
+from django.contrib.auth.decorators import login_required
+from .models import Evidence
 from .forms import (
     ReporterRegistrationForm,
     LawyerRegistrationForm,
     NGORegistrationForm,
     LoginForm,
     AnonymousReportForm,
+    AuthenticatedReportForm,
 )
 
 
@@ -172,3 +173,32 @@ def anonymous_report(request):
     return render(request, "rightsplace/anonymous_report.html", {
         "form": form
     })
+
+
+@login_required
+def report_create(request):
+    """
+    Allows logged-in users to submit a report with evidence files.
+    Stores the report with the logged-in user as the reporter.
+    Redirects to index after a successful submission.
+    Displays errors if the form is invalid.
+    """
+    if request.method == "POST":
+        form = AuthenticatedReportForm(request.POST)
+
+        if form.is_valid():
+            report = form.save(
+                reporter=request.user.profile,
+                files=request.FILES.getlist("evidence_files")
+            )
+
+            messages.success(
+                request, "Your report has been submitted successfully.")
+            return redirect("index")
+
+        messages.error(request, "Please correct the errors below.")
+
+    else:
+        form = AuthenticatedReportForm()
+
+    return render(request, "rightsplace/report_create.html", {"form": form})

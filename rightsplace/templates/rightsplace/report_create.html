@@ -1,0 +1,103 @@
+{% extends "rightsplace/layout.html" %}
+{% load static %}
+
+{% block title %}Submit Report — RightsPlace{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Highlight when dragging files over the box */
+    .dropzone {
+        border: 2px dashed #0d6efd;
+        border-radius: 8px;
+        padding: 40px;
+        text-align: center;
+        transition: background-color 0.2s ease;
+        cursor: pointer;
+    }
+
+    .dropzone.dragover {
+        background-color: rgba(13, 110, 253, 0.1);
+    }
+
+    .file-list {
+        margin-top: 15px;
+        list-style: none;
+        padding: 0;
+    }
+
+    .file-list li {
+        padding: 6px 10px;
+        background: #f8f9fa;
+        border-radius: 5px;
+        margin-bottom: 6px;
+        border: 1px solid #ddd;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="container py-4">
+
+    <h1 class="fw-bold mb-4">Submit a Report</h1>
+    <p class="text-muted">Please provide a detailed description. Upload any evidence that may help support your case.</p>
+
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Report Form -->
+    <div class="card shadow-sm p-4">
+
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Category</label>
+                {{ form.category }}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Description</label>
+                {{ form.description }}
+            </div>
+
+            <!-- =============================
+                 FILE UPLOAD AREA
+            ============================== -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">Upload Evidence</label>
+
+                <!-- DROPZONE -->
+                <div id="dropzone" class="dropzone">
+                    <p class="mb-2">Drag & drop files here</p>
+                    <p class="text-muted small">or click to select</p>
+
+                    <!-- IMPORTANT: correct name for Django -->
+                    <input type="file"
+                           id="fileInput"
+                           name="evidence_files"
+                           multiple
+                           class="d-none">
+                </div>
+
+                <!-- Preview file list -->
+                <ul id="fileList" class="file-list"></ul>
+
+            </div>
+
+            <button class="btn btn-primary mt-3">Submit Report</button>
+        </form>
+
+    </div>
+</div>
+
+{% endblock %}
+
+{% block script %}
+<script src="{% static 'rightsplace/report_create.js' %}"></script>
+{% endblock %}
