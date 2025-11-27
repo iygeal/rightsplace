@@ -16,6 +16,13 @@ from django.core.exceptions import ValidationError
 from .models import UserProfile, Report, Evidence
 
 
+class ClearableMultipleFileInput(forms.ClearableFileInput):
+    """
+    A custom form field that allows multiple files to be selected.
+    """
+    allow_multiple_selected = True
+
+
 # -------------------------------------------------------------------------
 # Login Form
 # -------------------------------------------------------------------------
@@ -71,7 +78,7 @@ EMAIL_INPUT = forms.EmailInput(attrs={"class": "form-control"})
 PASSWORD_INPUT = forms.PasswordInput(attrs={"class": "form-control"})
 TEXTAREA = forms.Textarea(attrs={"class": "form-control", "rows": 4})
 SELECT = forms.Select(attrs={"class": "form-select"})
-FILE_INPUT = forms.ClearableFileInput(attrs={
+FILE_INPUT_MULTI = ClearableMultipleFileInput(attrs={
     "class": "form-control",
     "multiple": True
     })
@@ -177,7 +184,7 @@ class AuthenticatedReportForm(forms.ModelForm):
 
     evidence_files = forms.FileField(
         required=False,
-        widget=FILE_INPUT,
+        widget=FILE_INPUT_MULTI,
         help_text="Upload any supporting evidence.",
     )
 
@@ -231,7 +238,7 @@ class AnonymousReportForm(forms.ModelForm):
 
     evidence_files = forms.FileField(
         required=False,
-        widget=FILE_INPUT,
+        widget=FILE_INPUT_MULTI,
         help_text="Upload supporting evidence (photo, video, document)."
     )
 

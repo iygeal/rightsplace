@@ -1,15 +1,10 @@
 from django.urls import path
 from . import views
-from django.http import HttpResponse
-
-
-def placeholder(request):
-    return HttpResponse("This page is under construction.")
 
 
 urlpatterns = [
     path('', views.index, name='index'),
-    path('report/create/', placeholder, name='report_create'),
+    path('report/create/', views.report_create, name='report_create'),
     path('login/', views.login_view, name='login'),
     path('register/', views.register, name='register'),
     path('logout/', views.logout_view, name='logout'),
