@@ -178,20 +178,21 @@ def anonymous_report(request):
 @login_required
 def report_create(request):
     """
-    Allows logged-in users to submit a report with evidence files.
-    Stores the report with the logged-in user as the reporter.
-    Redirects to index after a successful submission.
-    Displays errors if the form is invalid.
+    Allows logged-in regular users to submit a report with evidence files.
+    Lawyers and NGOs are not allowed to submit reports.
     """
+    # Restrict report creation to normal users only
+    if request.user.userprofile.role != "user":
+        messages.error(request, "Only regular users can submit reports.")
+        return redirect("index")
+
     if request.method == "POST":
-        form = AuthenticatedReportForm(request.POST)
+        form = AuthenticatedReportForm(request.POST, request.FILES)
 
         if form.is_valid():
-            report = form.save(
-                reporter=request.user.profile,
-                files=request.FILES.getlist("evidence_files")
+            form.save(
+                reporter=request.user.userprofile
             )
-
             messages.success(
                 request, "Your report has been submitted successfully.")
             return redirect("index")

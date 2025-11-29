@@ -5,7 +5,6 @@
 
 {% block extra_css %}
 <style>
-    /* Highlight when dragging files over the box */
     .dropzone {
         border: 2px dashed #0d6efd;
         border-radius: 8px;
@@ -43,57 +42,79 @@
     <h1 class="fw-bold mb-4">Submit a Report</h1>
     <p class="text-muted">Please provide a detailed description. Upload any evidence that may help support your case.</p>
 
-    <!-- Messages -->
+    <!-- Django Messages -->
     {% if messages %}
         {% for message in messages %}
             <div class="alert alert-{{ message.tags }}">{{ message }}</div>
         {% endfor %}
     {% endif %}
 
-    <!-- Report Form -->
     <div class="card shadow-sm p-4">
 
+        <!-- FORM -->
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
 
+            <!-- TITLE -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">Title</label>
+                {{ form.title }}
+                {% if form.title.errors %}
+                    <div class="text-danger small">{{ form.title.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- CATEGORY -->
             <div class="mb-3">
                 <label class="form-label fw-bold">Category</label>
                 {{ form.category }}
+                {% if form.category.errors %}
+                    <div class="text-danger small">{{ form.category.errors }}</div>
+                {% endif %}
             </div>
 
+            <!-- INCIDENT LOCATION -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">Incident Location</label>
+                {{ form.incident_location }}
+                {% if form.incident_location.errors %}
+                    <div class="text-danger small">{{ form.incident_location.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- DESCRIPTION -->
             <div class="mb-3">
                 <label class="form-label fw-bold">Description</label>
                 {{ form.description }}
+                {% if form.description.errors %}
+                    <div class="text-danger small">{{ form.description.errors }}</div>
+                {% endif %}
             </div>
 
-            <!-- =============================
-                 FILE UPLOAD AREA
-            ============================== -->
+            <!-- FILE UPLOAD -->
             <div class="mb-3">
                 <label class="form-label fw-bold">Upload Evidence</label>
 
-                <!-- DROPZONE -->
                 <div id="dropzone" class="dropzone">
                     <p class="mb-2">Drag & drop files here</p>
                     <p class="text-muted small">or click to select</p>
 
-                    <!-- IMPORTANT: correct name for Django -->
                     <input type="file"
                            id="fileInput"
                            name="evidence_files"
                            multiple
+                            accept=".jpg,.jpeg,.png,.gif,.mp4,.avi,.mov,.mp3,.wav,.pdf,.doc,.docx,.xls,.xlsx,.txt"
                            class="d-none">
                 </div>
 
-                <!-- Preview file list -->
                 <ul id="fileList" class="file-list"></ul>
-
             </div>
 
             <button class="btn btn-primary mt-3">Submit Report</button>
         </form>
 
     </div>
+
 </div>
 
 {% endblock %}

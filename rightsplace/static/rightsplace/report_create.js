@@ -1,87 +1,85 @@
-document.addEventListener("DOMContentLoaded", function () {
-    const dropzone = document.getElementById("dropzone");
-    const fileInput = document.getElementById("fileInput");
-    const fileList = document.getElementById("fileList");
+document.addEventListener('DOMContentLoaded', function () {
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const fileList = document.getElementById('fileList');
 
-    // Allowed MIME type groups
-    const allowedTypes = [
-        "image/",      // jpg, png, gif, etc.
-        "video/",      // mp4, avi, mov
-        "audio/",      // mp3, wav
-        "application/pdf",
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "application/vnd.ms-excel",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "text/plain"
-    ];
+  // Store ALL selected files here
+  let storedFiles = [];
 
-    // Validate file type
-    function isValidFile(file) {
-        return allowedTypes.some(type => file.type.startsWith(type) || file.type === type);
+  // Allowed file types
+  const allowedTypes = [
+    'image/',
+    'video/',
+    'audio/',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'text/plain',
+  ];
+
+  function isValidFile(file) {
+    return allowedTypes.some(
+      (type) => file.type.startsWith(type) || file.type === type
+    );
+  }
+
+  // Rebuild file input using DataTransfer
+  function syncInputFiles() {
+    const dt = new DataTransfer();
+    storedFiles.forEach((f) => dt.items.add(f));
+    fileInput.files = dt.files;
+  }
+
+  // Update file preview list
+  function refreshPreview() {
+    fileList.innerHTML = '';
+    storedFiles.forEach((file) => {
+      const li = document.createElement('li');
+      li.textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
+      fileList.appendChild(li);
+    });
+  }
+
+  // Add one or more files to the stored list
+  function addFiles(files) {
+    for (let file of files) {
+      if (!isValidFile(file)) {
+        alert(`Unsupported file format: ${file.name}`);
+        return;
+      }
+      storedFiles.push(file);
     }
 
-    // Add files to preview list
-    function displayFiles(files) {
-        fileList.innerHTML = ""; // Clear existing list
+    syncInputFiles();
+    refreshPreview();
+  }
 
-        Array.from(files).forEach(file => {
-            const li = document.createElement("li");
-            li.textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
-            fileList.appendChild(li);
-        });
-    }
+  // Highlight dropzone
+  dropzone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzone.classList.add('dragover');
+  });
 
-    // Highlight dropzone
-    dropzone.addEventListener("dragover", function (e) {
-        e.preventDefault();
-        dropzone.classList.add("dragover");
-    });
+  dropzone.addEventListener('dragleave', () => {
+    dropzone.classList.remove('dragover');
+  });
 
-    dropzone.addEventListener("dragleave", function () {
-        dropzone.classList.remove("dragover");
-    });
+  // Handle dropped files
+  dropzone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('dragover');
+    addFiles(e.dataTransfer.files);
+  });
 
-    // Handle dropped files
-    dropzone.addEventListener("drop", function (e) {
-        e.preventDefault();
-        dropzone.classList.remove("dragover");
+  // Click to trigger file picker
+  dropzone.addEventListener('click', () => {
+    fileInput.click();
+  });
 
-        const droppedFiles = e.dataTransfer.files;
-
-        // Validate
-        for (let file of droppedFiles) {
-            if (!isValidFile(file)) {
-                alert("One or more files have an unsupported format.");
-                return;
-            }
-        }
-
-        // Pass files to hidden input
-        fileInput.files = droppedFiles;
-
-        // Display preview
-        displayFiles(droppedFiles);
-    });
-
-    // Click to open file picker
-    dropzone.addEventListener("click", () => {
-        fileInput.click();
-    });
-
-    // When selecting with click
-    fileInput.addEventListener("change", function () {
-        const selected = fileInput.files;
-
-        // Validate
-        for (let file of selected) {
-            if (!isValidFile(file)) {
-                alert("One or more selected files have an unsupported format.");
-                fileInput.value = ""; // reset
-                return;
-            }
-        }
-
-        displayFiles(selected);
-    });
+  // When selecting through file picker
+  fileInput.addEventListener('change', function () {
+    addFiles(fileInput.files);
+  });
 });
