@@ -188,13 +188,6 @@ class AuthenticatedReportForm(forms.ModelForm):
         widget=FILE_INPUT_MULTI,
         help_text="Upload supporting evidence files.",
     )
-
-    def clean_evidence_files(self):
-        """
-        Extracts the uploaded evidence files into a list.
-        """
-        return self.files.getlist("evidence_files")
-
     class Meta:
         model = Report
         fields = ["title", "description", "category", "incident_location"]
@@ -205,28 +198,32 @@ class AuthenticatedReportForm(forms.ModelForm):
             "incident_location": TEXT_INPUT,
         }
 
+    def clean_evidence_files(self):
+        """
+        Returns a list of uploaded files (even if empty).
+        """
+        files = self.files.getlist("evidence_files")
+        return files
+
     def save(self, commit=True, reporter=None):
         """
-        Saves the report and attaches multiple evidence files.
-        Reporter must be a UserProfile instance.
+        Saves report and attaches multiple evidence files.
+        Must supply reporter=request.user.userprofile.
         """
         if reporter is None:
-            raise ValueError(
-                "AuthenticatedReportForm requires reporter=request.user.userprofile")
+            raise ValueError("AuthenticatedReportForm requires reporter=request.user.userprofile")
 
-        # Build report instance
         report = super().save(commit=False)
         report.reporter = reporter
 
         if commit:
             report.save()
 
-        # Save multiple files
-        for file in self.cleaned_data.get("evidence_files", []):
-            Evidence.objects.create(report=report, file=file)
+        # Attach files
+        for f in self.cleaned_data.get("evidence_files", []):
+            Evidence.objects.create(report=report, file=f)
 
         return report
-
 
 
 # -------------------------------------------------------------------------

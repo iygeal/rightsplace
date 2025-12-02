@@ -1,124 +1,83 @@
-{% extends "rightsplace/layout.html" %}
 {% load static %}
 
-{% block title %}Submit Report — RightsPlace{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create Report</title>
+    <link rel="stylesheet" href="{% static 'css/report_create.css' %}">
+</head>
 
-{% block extra_css %}
-<style>
-    .dropzone {
-        border: 2px dashed #0d6efd;
-        border-radius: 8px;
-        padding: 40px;
-        text-align: center;
-        transition: background-color 0.2s ease;
-        cursor: pointer;
-    }
+<body class="bg-light">
 
-    .dropzone.dragover {
-        background-color: rgba(13, 110, 253, 0.1);
-    }
+<div class="container py-5">
+    <h2 class="mb-4 fw-bold">Submit an Incident Report</h2>
 
-    .file-list {
-        margin-top: 15px;
-        list-style: none;
-        padding: 0;
-    }
-
-    .file-list li {
-        padding: 6px 10px;
-        background: #f8f9fa;
-        border-radius: 5px;
-        margin-bottom: 6px;
-        border: 1px solid #ddd;
-        font-size: 0.9rem;
-    }
-</style>
-{% endblock %}
-
-{% block content %}
-
-<div class="container py-4">
-
-    <h1 class="fw-bold mb-4">Submit a Report</h1>
-    <p class="text-muted">Please provide a detailed description. Upload any evidence that may help support your case.</p>
-
-    <!-- Django Messages -->
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-        {% endfor %}
+    {% if success %}
+        <div class="alert alert-success">
+            Your report has been submitted successfully.
+        </div>
     {% endif %}
 
-    <div class="card shadow-sm p-4">
+    <form method="POST" enctype="multipart/form-data" id="reportForm">
+        {% csrf_token %}
 
-        <!-- FORM -->
-        <form method="post" enctype="multipart/form-data">
-            {% csrf_token %}
+        <!-- TITLE -->
+        <div class="mb-3">
+            <label class="form-label">Title</label>
+            {{ form.title }}
+            {% if form.title.errors %}
+                <div class="text-danger">{{ form.title.errors }}</div>
+            {% endif %}
+        </div>
 
-            <!-- TITLE -->
-            <div class="mb-3">
-                <label class="form-label fw-bold">Title</label>
-                {{ form.title }}
-                {% if form.title.errors %}
-                    <div class="text-danger small">{{ form.title.errors }}</div>
-                {% endif %}
-            </div>
+        <!-- DESCRIPTION -->
+        <div class="mb-3">
+            <label class="form-label">Description</label>
+            {{ form.description }}
+            {% if form.description.errors %}
+                <div class="text-danger">{{ form.description.errors }}</div>
+            {% endif %}
+        </div>
 
-            <!-- CATEGORY -->
-            <div class="mb-3">
-                <label class="form-label fw-bold">Category</label>
-                {{ form.category }}
-                {% if form.category.errors %}
-                    <div class="text-danger small">{{ form.category.errors }}</div>
-                {% endif %}
-            </div>
+        <!-- CATEGORY -->
+        <div class="mb-3">
+            <label class="form-label">Category</label>
+            {{ form.category }}
+            {% if form.category.errors %}
+                <div class="text-danger">{{ form.category.errors }}</div>
+            {% endif %}
+        </div>
 
-            <!-- INCIDENT LOCATION -->
-            <div class="mb-3">
-                <label class="form-label fw-bold">Incident Location</label>
-                {{ form.incident_location }}
-                {% if form.incident_location.errors %}
-                    <div class="text-danger small">{{ form.incident_location.errors }}</div>
-                {% endif %}
-            </div>
+        <!-- INCIDENT LOCATION -->
+        <div class="mb-3">
+            <label class="form-label">Incident Location</label>
+            {{ form.incident_location }}
+            {% if form.incident_location.errors %}
+                <div class="text-danger">{{ form.incident_location.errors }}</div>
+            {% endif %}
+        </div>
 
-            <!-- DESCRIPTION -->
-            <div class="mb-3">
-                <label class="form-label fw-bold">Description</label>
-                {{ form.description }}
-                {% if form.description.errors %}
-                    <div class="text-danger small">{{ form.description.errors }}</div>
-                {% endif %}
-            </div>
+        <!-- DJANGO REAL FILE INPUT (HIDDEN) -->
+        <div style="display:none;">
+            {{ form.evidence_files }}
+        </div>
 
-            <!-- FILE UPLOAD -->
-            <div class="mb-3">
-                <label class="form-label fw-bold">Upload Evidence</label>
+        <!-- DRAG & DROP ZONE -->
+        <div id="dropZone" class="border border-2 border-secondary rounded p-4 text-center bg-white mb-3"
+             style="cursor:pointer;">
+            <p class="text-muted">Drag & drop evidence files here, or click to select.</p>
+            <input type="file" id="fileInput" multiple hidden>
+        </div>
 
-                <div id="dropzone" class="dropzone">
-                    <p class="mb-2">Drag & drop files here</p>
-                    <p class="text-muted small">or click to select</p>
+        <!-- FILE LIST PREVIEW -->
+        <ul id="fileList" class="list-group mb-3"></ul>
 
-                    <input type="file"
-                           id="fileInput"
-                           name="evidence_files"
-                           multiple
-                            accept=".jpg,.jpeg,.png,.gif,.mp4,.avi,.mov,.mp3,.wav,.pdf,.doc,.docx,.xls,.xlsx,.txt"
-                           class="d-none">
-                </div>
-
-                <ul id="fileList" class="file-list"></ul>
-            </div>
-
-            <button class="btn btn-primary mt-3">Submit Report</button>
-        </form>
-
-    </div>
-
+        <button type="submit" class="btn btn-primary px-4">Submit Report</button>
+    </form>
 </div>
 
-{% endblock %}
+<script src="{% static 'js/report_create.js' %}"></script>
 
-{% block script %}
-<script src="{% static 'rightsplace/report_create.js' %}"></script>
-{% endblock %}
+</body>
+</html>

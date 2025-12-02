@@ -1,3 +1,4 @@
+from urllib import request
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth import login, logout
@@ -178,28 +179,44 @@ def anonymous_report(request):
 @login_required
 def report_create(request):
     """
-    Allows logged-in regular users to submit a report with evidence files.
-    Lawyers and NGOs are not allowed to submit reports.
+    Authenticated report creation view.
+    Handles full form validation, multiple files, and inline success message.
     """
-    # Restrict report creation to normal users only
-    if request.user.userprofile.role != "user":
-        messages.error(request, "Only regular users can submit reports.")
-        return redirect("index")
 
     if request.method == "POST":
         form = AuthenticatedReportForm(request.POST, request.FILES)
 
         if form.is_valid():
-            form.save(
-                reporter=request.user.userprofile
+            # Save with reporter
+            form.save(reporter=request.user.userprofile)
+
+            # Render same page but with success message & empty form
+            return render(
+                request,
+                "report/report_create.html",
+                {
+                    "form": AuthenticatedReportForm(),  # reset form
+                    "success": True,
+                }
             )
-            messages.success(
-                request, "Your report has been submitted successfully.")
-            return redirect("index")
 
-        messages.error(request, "Please correct the errors below.")
+        # Validation failed → display errors and preserve files list
+        return render(
+            request,
+            "report/report_create.html",
+            {
+                "form": form,
+                "success": False,
+            }
+        )
 
-    else:
-        form = AuthenticatedReportForm()
-
-    return render(request, "rightsplace/report_create.html", {"form": form})
+    # GET request
+    form = AuthenticatedReportForm()
+    return render(
+        request,
+        "rightsplace/report_create.html",
+        {
+            "form": form,
+            "success": False,
+        }
+    )
