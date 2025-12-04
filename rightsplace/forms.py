@@ -174,96 +174,6 @@ class ReporterRegistrationForm(forms.ModelForm):
         return profile
 
 
-# -----------------------------------------------------------------------------
-# Authenticated User Report Form
-# -----------------------------------------------------------------------------
-class AuthenticatedReportForm(forms.ModelForm):
-    """
-    Form used by logged-in users to submit a report.
-    Allows uploading multiple evidence files.
-    """
-
-    evidence_files = forms.FileField(
-        required=False,
-        widget=FILE_INPUT_MULTI,
-        help_text="Upload supporting evidence files.",
-    )
-    class Meta:
-        model = Report
-        fields = ["title", "description", "category", "incident_location"]
-        widgets = {
-            "title": TEXT_INPUT,
-            "description": TEXTAREA,
-            "category": SELECT,
-            "incident_location": TEXT_INPUT,
-        }
-
-    def clean_evidence_files(self):
-        """
-        Returns a list of uploaded files (even if empty).
-        """
-        files = self.files.getlist("evidence_files")
-        return files
-
-    def save(self, commit=True, reporter=None):
-        """
-        Saves report and attaches multiple evidence files.
-        Must supply reporter=request.user.userprofile.
-        """
-        if reporter is None:
-            raise ValueError("AuthenticatedReportForm requires reporter=request.user.userprofile")
-
-        report = super().save(commit=False)
-        report.reporter = reporter
-
-        if commit:
-            report.save()
-
-        # Attach files
-        for f in self.cleaned_data.get("evidence_files", []):
-            Evidence.objects.create(report=report, file=f)
-
-        return report
-
-
-# -------------------------------------------------------------------------
-# Anonymous Report Form
-# -------------------------------------------------------------------------
-class AnonymousReportForm(forms.ModelForm):
-    """
-    Form for submitting reports without registration.
-
-    Contact fields and evidence are optional but encouraged.
-    """
-
-    contact_email = forms.EmailField(required=False, widget=EMAIL_INPUT)
-    contact_phone = forms.CharField(required=False, widget=TEXT_INPUT)
-
-    evidence_files = forms.FileField(
-        required=False,
-        widget=FILE_INPUT_MULTI,
-        help_text="Upload supporting evidence (photo, video, document)."
-    )
-
-    class Meta:
-        model = Report
-        fields = ["title", "description", "category", "incident_location"]
-        widgets = {
-            "title": TEXT_INPUT,
-            "description": TEXTAREA,
-            "category": SELECT,
-            "incident_location": TEXT_INPUT,
-        }
-
-    def save(self, commit=True):
-        report = super().save(commit)
-
-        file_obj = self.cleaned_data.get("evidence_files")
-        if file_obj:
-            Evidence.objects.create(report=report, file=file_obj)
-
-        return report
-
 
 # -------------------------------------------------------------------------
 # Lawyer Registration Form
@@ -405,3 +315,162 @@ class NGORegistrationForm(forms.ModelForm):
             profile.save()
 
         return profile
+
+
+class AuthenticatedReportForm(forms.ModelForm):
+    """
+    Form used by logged-in users to submit a report.
+    Allows uploading multiple evidence files.
+    """
+
+    evidence_files = forms.FileField(
+        required=False,
+        widget=ClearableMultipleFileInput(
+            attrs={
+                "class": "form-control",
+                "multiple": True,
+                "id": "djangoFileInput",
+            }
+        ),
+        help_text="Upload supporting evidence files.",
+    )
+
+    class Meta:
+        model = Report
+        fields = ["title", "description", "category", "incident_location"]
+        widgets = {
+            "title": forms.TextInput(attrs={"class": "form-control"}),
+            "description": forms.Textarea(attrs={"class": "form-control", "rows": 4}),
+            "category": forms.Select(attrs={"class": "form-select"}),
+            "incident_location": forms.TextInput(attrs={"class": "form-control"}),
+        }
+
+    def clean_evidence_files(self):
+        """
+        Validate uploaded files:
+        - each file ≤ 25 MB
+        - MIME type supported
+        Returns a list of uploaded files.
+        """
+        files = self.files.getlist("evidence_files")
+        cleaned = []
+
+        allowed_prefixes = ("image/", "video/", "audio/")
+        allowed_exact = {
+            "application/pdf",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "text/plain",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/vnd.ms-excel",
+        }
+        max_bytes = 25 * 1024 * 1024
+
+        errors = []
+
+        for f in files:
+            if f.size > max_bytes:
+                errors.append(f'"{f.name}" exceeds 25 MB.')
+                continue
+
+            ctype = getattr(f, "content_type", "")
+            if not ctype:
+                errors.append(f'Could not determine content type: "{f.name}".')
+                continue
+
+            if not (any(ctype.startswith(p) for p in allowed_prefixes) or ctype in allowed_exact):
+                errors.append(f'"{f.name}" has unsupported type: "{ctype}".')
+
+            cleaned.append(f)
+
+        if errors:
+            raise ValidationError(errors)
+
+        return cleaned
+
+    def save(self, commit=True, reporter=None):
+        if reporter is None:
+            raise ValueError(
+                "AuthenticatedReportForm requires reporter=request.user.userprofile")
+
+        report = super().save(commit=False)
+        report.reporter = reporter
+
+        if commit:
+            report.save()
+
+        for f in self.cleaned_data.get("evidence_files", []):
+            Evidence.objects.create(report=report, file=f)
+
+        return report
+
+
+# -----------------------------
+# AnonymousReportForm changes
+# -----------------------------
+class AnonymousReportForm(forms.ModelForm):
+    contact_email = forms.EmailField(required=False, widget=EMAIL_INPUT)
+    contact_phone = forms.CharField(required=False, widget=TEXT_INPUT)
+
+
+    evidence_files = forms.FileField(
+        required=False,
+        widget=ClearableMultipleFileInput(attrs={
+            "class": "form-control",
+            "multiple": True,
+            "id": "djangoFileInput",
+        }),
+        help_text="Upload supporting evidence files.",
+    )
+
+
+    class Meta:
+        model = Report
+        fields = ["title", "description", "category", "incident_location"]
+        widgets = {
+            "title": TEXT_INPUT,
+            "description": TEXTAREA,
+            "category": SELECT,
+            "incident_location": TEXT_INPUT,
+        }
+
+    def clean_evidence_files(self):
+        # reuse same validation logic as authenticated form
+        files = self.files.getlist("evidence_files")
+        # We can reuse code by instantiating an AuthenticatedReportForm-like validation,
+        # but to keep it simple we replicate the same checks here.
+
+        allowed_prefixes = ("image/", "video/", "audio/")
+        allowed_exact = {
+            "application/pdf",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "text/plain",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/vnd.ms-excel",
+        }
+        max_bytes = 25 * 1024 * 1024
+
+        errors = []
+        cleaned = []
+        for f in files:
+            if f.size > max_bytes:
+                errors.append(
+                    f'"{f.name}" is too large ({f.size} bytes). Max 25 MB.')
+                continue
+            ctype = getattr(f, "content_type", "")
+            if not (any(ctype.startswith(p) for p in allowed_prefixes) or ctype in allowed_exact):
+                errors.append(f'"{f.name}" has unsupported type "{ctype}".')
+            cleaned.append(f)
+
+        if errors:
+            raise ValidationError(errors)
+        return cleaned
+
+    def save(self, commit=True):
+        report = super().save(commit)
+
+        for f in self.cleaned_data.get("evidence_files", []):
+            Evidence.objects.create(report=report, file=f)
+
+        return report

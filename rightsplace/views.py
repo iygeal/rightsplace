@@ -4,6 +4,9 @@ from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from .models import Evidence
+from django.http import JsonResponse
+from django.urls import reverse
+from django.views.decorators.http import require_http_methods
 from .forms import (
     ReporterRegistrationForm,
     LawyerRegistrationForm,
@@ -177,46 +180,64 @@ def anonymous_report(request):
 
 
 @login_required
+@require_http_methods(["GET", "POST"])
 def report_create(request):
     """
     Authenticated report creation view.
-    Handles full form validation, multiple files, and inline success message.
+
+    Behavior:
+    - If the client submits via normal POST (no JS), we keep the old behaviour:
+      validate, on success redirect (PRG) to avoid resubmission; on failure render page.
+    - If the client submits via AJAX (X-Requested-With: XMLHttpRequest), we return JSON:
+      - success -> {success: True}
+      - errors -> {success: False, errors: {field: [messages], ...}}
+      This avoids a full page reload so selected files in the browser remain intact.
     """
+    # Only users with role == "user" may create authenticated reports
+    try:
+        role = request.user.userprofile.role
+    except Exception:
+        role = None
+
+    if role != "user":
+        # For AJAX return JSON; for normal POST/GET show a message + redirect
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse({"success": False, "errors": {"__all__": ["Only regular reporter accounts may submit reports."]}}, status=403)
+        messages.error(
+            request, "Only regular reporter accounts may submit reports.")
+        return redirect("index")
 
     if request.method == "POST":
         form = AuthenticatedReportForm(request.POST, request.FILES)
-
+        # Ensure the form has access to files (it will use self.files.getlist in clean)
         if form.is_valid():
             # Save with reporter
-            form.save(reporter=request.user.userprofile)
+            report = form.save(reporter=request.user.userprofile)
 
-            # Render same page but with success message & empty form
-            return render(
-                request,
-                "report/report_create.html",
-                {
-                    "form": AuthenticatedReportForm(),  # reset form
-                    "success": True,
-                }
-            )
+            # If AJAX: respond JSON (no page reload)
+            if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                return JsonResponse({"success": True, "message": "Your report has been submitted successfully."})
 
-        # Validation failed → display errors and preserve files list
-        return render(
-            request,
-            "report/report_create.html",
-            {
-                "form": form,
-                "success": False,
-            }
-        )
+            # Non-AJAX: use PRG to avoid form re-submission
+            messages.success(
+                request, "Your report has been submitted successfully.")
+            return redirect(reverse("report_create"))
+
+        # Form invalid
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            # Convert form.errors to a plain dict of lists for easy client processing
+            errors = {}
+            for k, v in form.errors.items():
+                errors[k] = v.get_json_data(escape_html=True)
+            # Also include non_field_errors if present
+            non_field = form.non_field_errors()
+            if non_field:
+                errors["__all__"] = non_field.get_json_data(escape_html=True)
+            return JsonResponse({"success": False, "errors": errors}, status=400)
+
+        # Non-AJAX invalid → render page with errors (form will display server-side errors)
+        return render(request, "rightsplace/report_create.html", {"form": form, "success": False})
 
     # GET request
     form = AuthenticatedReportForm()
-    return render(
-        request,
-        "rightsplace/report_create.html",
-        {
-            "form": form,
-            "success": False,
-        }
-    )
+    return render(request, "rightsplace/report_create.html", {"form": form, "success": False})
