@@ -14,9 +14,10 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from .models import UserProfile, Report, Evidence
+from django.forms.widgets import ClearableFileInput
 
 
-class ClearableMultipleFileInput(forms.ClearableFileInput):
+class ClearableMultipleFileInput(ClearableFileInput):
     """
     A custom form field that allows multiple files to be selected.
     """

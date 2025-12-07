@@ -3,10 +3,6 @@
 
 {% block title %}Submit Report — RightsPlace{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/report_create.css' %}">
-{% endblock %}
-
 {% block content %}
 <div class="container py-5">
     <h2 class="mb-4 fw-bold">Submit an Incident Report</h2>
@@ -78,12 +74,10 @@
             {% endif %}
         </div>
 
-
-        <!-- REAL DJANGO FILE INPUT (fully hidden) -->
+        <!-- HIDDEN DJANGO FILE FIELD -->
         <div style="height:0; overflow:hidden; opacity:0; position:absolute;">
             {{ form.evidence_files }}
         </div>
-
 
         <!-- DRAG & DROP ZONE -->
         <div id="dropZone"
@@ -94,7 +88,7 @@
                 You may upload images, video, audio, PDF, DOCX, XLSX, or TXT. Max 25 MB per file.
             </small>
 
-            <!-- VISIBLE FILE INPUT used by JS -->
+            <!-- VISIBLE FILE INPUT -->
             <input type="file" id="fileInput" multiple hidden aria-hidden="true">
         </div>
 
