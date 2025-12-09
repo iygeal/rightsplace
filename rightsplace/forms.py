@@ -14,15 +14,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from .models import UserProfile, Report, Evidence
-from django.forms.widgets import ClearableFileInput
-
-
-class ClearableMultipleFileInput(ClearableFileInput):
-    """
-    A custom form field that allows multiple files to be selected.
-    """
-    allow_multiple_selected = True
-
+from multiupload.fields import MultiFileField, MultiUploadMetaInput
 
 # -------------------------------------------------------------------------
 # Login Form
@@ -79,9 +71,8 @@ EMAIL_INPUT = forms.EmailInput(attrs={"class": "form-control"})
 PASSWORD_INPUT = forms.PasswordInput(attrs={"class": "form-control"})
 TEXTAREA = forms.Textarea(attrs={"class": "form-control", "rows": 4})
 SELECT = forms.Select(attrs={"class": "form-select"})
-FILE_INPUT_MULTI = ClearableMultipleFileInput(attrs={
-    "class": "form-control",
-    "multiple": True
+FILE_INPUT_MULTI = MultiUploadMetaInput(attrs={
+    "class": "form-control"
     })
 CHECKBOX = forms.CheckboxInput(attrs={"class": "form-check-input"})
 
@@ -320,69 +311,61 @@ class NGORegistrationForm(forms.ModelForm):
 
 class AuthenticatedReportForm(forms.ModelForm):
     """
-    Form used by logged-in users to submit a report.
-    Allows uploading multiple evidence files.
-    """
+    Form for authenticated users to submit reports.
 
-    evidence_files = forms.FileField(
+    Validates uploaded evidence files:
+    - Allowed types
+    - Max size 100 MB
+    """
+    evidence_files = MultiFileField(
+        min_num=0,
+        max_num=20,
+        max_file_size=100 * 1024 * 1024,   # 100MB per file
         required=False,
-        widget=ClearableMultipleFileInput(
-            attrs={
-                "class": "form-control",
-                "multiple": True,
-                "id": "djangoFileInput",
-            }
-        ),
-        help_text="Upload supporting evidence files.",
+        widget=FILE_INPUT_MULTI,
+        help_text="Upload supporting evidence files (max 100MB each)."
     )
 
     class Meta:
         model = Report
         fields = ["title", "description", "category", "incident_location"]
         widgets = {
-            "title": forms.TextInput(attrs={"class": "form-control"}),
-            "description": forms.Textarea(attrs={"class": "form-control", "rows": 4}),
-            "category": forms.Select(attrs={"class": "form-select"}),
-            "incident_location": forms.TextInput(attrs={"class": "form-control"}),
+            "title": TEXT_INPUT,
+            "description": TEXTAREA,
+            "category": SELECT,
+            "incident_location": TEXT_INPUT,
         }
 
     def clean_evidence_files(self):
         """
-        Validate uploaded files:
-        - each file ≤ 25 MB
-        - MIME type supported
-        Returns a list of uploaded files.
+        Validates uploaded files:
+        - Allowed types
+        - Max size 100 MB
         """
-        files = self.files.getlist("evidence_files")
+        files = self.cleaned_data.get("evidence_files") or []
         cleaned = []
+        errors = []
 
         allowed_prefixes = ("image/", "video/", "audio/")
         allowed_exact = {
             "application/pdf",
             "application/msword",
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "text/plain",
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             "application/vnd.ms-excel",
+            "text/plain",
         }
-        max_bytes = 25 * 1024 * 1024
-
-        errors = []
 
         for f in files:
-            if f.size > max_bytes:
-                errors.append(f'"{f.name}" exceeds 25 MB.')
-                continue
-
             ctype = getattr(f, "content_type", "")
-            if not ctype:
-                errors.append(f'Could not determine content type: "{f.name}".')
-                continue
+            size = getattr(f, "size", 0)
 
-            if not (any(ctype.startswith(p) for p in allowed_prefixes) or ctype in allowed_exact):
+            if size > 100 * 1024 * 1024:
+                errors.append(f'"{f.name}" exceeds 100 MB.')
+            elif not (any(ctype.startswith(p) for p in allowed_prefixes) or ctype in allowed_exact):
                 errors.append(f'"{f.name}" has unsupported type: "{ctype}".')
-
-            cleaned.append(f)
+            else:
+                cleaned.append(f)
 
         if errors:
             raise ValidationError(errors)
@@ -390,6 +373,12 @@ class AuthenticatedReportForm(forms.ModelForm):
         return cleaned
 
     def save(self, commit=True, reporter=None):
+        """
+        Saves the report and associated Evidence files.
+
+        :param commit: whether to save the report and associated Evidence files
+        :param reporter: the UserProfile instance of the reporter
+        """
         if reporter is None:
             raise ValueError(
                 "AuthenticatedReportForm requires reporter=request.user.userprofile")
@@ -405,73 +394,72 @@ class AuthenticatedReportForm(forms.ModelForm):
 
         return report
 
-
 # -----------------------------
 # AnonymousReportForm changes
 # -----------------------------
-class AnonymousReportForm(forms.ModelForm):
-    contact_email = forms.EmailField(required=False, widget=EMAIL_INPUT)
-    contact_phone = forms.CharField(required=False, widget=TEXT_INPUT)
+# class AnonymousReportForm(forms.ModelForm):
+#     contact_email = forms.EmailField(required=False, widget=EMAIL_INPUT)
+#     contact_phone = forms.CharField(required=False, widget=TEXT_INPUT)
 
 
-    evidence_files = forms.FileField(
-        required=False,
-        widget=ClearableMultipleFileInput(attrs={
-            "class": "form-control",
-            "multiple": True,
-            "id": "djangoFileInput",
-        }),
-        help_text="Upload supporting evidence files.",
-    )
+#     evidence_files = forms.FileField(
+#         required=False,
+#         widget=ClearableMultipleFileInput(attrs={
+#             "class": "form-control",
+#             "multiple": True,
+#             "id": "djangoFileInput",
+#         }),
+#         help_text="Upload supporting evidence files.",
+#     )
 
 
-    class Meta:
-        model = Report
-        fields = ["title", "description", "category", "incident_location"]
-        widgets = {
-            "title": TEXT_INPUT,
-            "description": TEXTAREA,
-            "category": SELECT,
-            "incident_location": TEXT_INPUT,
-        }
+#     class Meta:
+#         model = Report
+#         fields = ["title", "description", "category", "incident_location"]
+#         widgets = {
+#             "title": TEXT_INPUT,
+#             "description": TEXTAREA,
+#             "category": SELECT,
+#             "incident_location": TEXT_INPUT,
+#         }
 
-    def clean_evidence_files(self):
-        # reuse same validation logic as authenticated form
-        files = self.files.getlist("evidence_files")
-        # We can reuse code by instantiating an AuthenticatedReportForm-like validation,
-        # but to keep it simple we replicate the same checks here.
+#     def clean_evidence_files(self):
+#         # reuse same validation logic as authenticated form
+#         files = self.files.getlist("evidence_files")
+#         # We can reuse code by instantiating an AuthenticatedReportForm-like validation,
+#         # but to keep it simple we replicate the same checks here.
 
-        allowed_prefixes = ("image/", "video/", "audio/")
-        allowed_exact = {
-            "application/pdf",
-            "application/msword",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "text/plain",
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "application/vnd.ms-excel",
-        }
-        max_bytes = 25 * 1024 * 1024
+#         allowed_prefixes = ("image/", "video/", "audio/")
+#         allowed_exact = {
+#             "application/pdf",
+#             "application/msword",
+#             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+#             "text/plain",
+#             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+#             "application/vnd.ms-excel",
+#         }
+#         max_bytes = 25 * 1024 * 1024
 
-        errors = []
-        cleaned = []
-        for f in files:
-            if f.size > max_bytes:
-                errors.append(
-                    f'"{f.name}" is too large ({f.size} bytes). Max 25 MB.')
-                continue
-            ctype = getattr(f, "content_type", "")
-            if not (any(ctype.startswith(p) for p in allowed_prefixes) or ctype in allowed_exact):
-                errors.append(f'"{f.name}" has unsupported type "{ctype}".')
-            cleaned.append(f)
+#         errors = []
+#         cleaned = []
+#         for f in files:
+#             if f.size > max_bytes:
+#                 errors.append(
+#                     f'"{f.name}" is too large ({f.size} bytes). Max 25 MB.')
+#                 continue
+#             ctype = getattr(f, "content_type", "")
+#             if not (any(ctype.startswith(p) for p in allowed_prefixes) or ctype in allowed_exact):
+#                 errors.append(f'"{f.name}" has unsupported type "{ctype}".')
+#             cleaned.append(f)
 
-        if errors:
-            raise ValidationError(errors)
-        return cleaned
+#         if errors:
+#             raise ValidationError(errors)
+#         return cleaned
 
-    def save(self, commit=True):
-        report = super().save(commit)
+#     def save(self, commit=True):
+#         report = super().save(commit)
 
-        for f in self.cleaned_data.get("evidence_files", []):
-            Evidence.objects.create(report=report, file=f)
+#         for f in self.cleaned_data.get("evidence_files", []):
+#             Evidence.objects.create(report=report, file=f)
 
-        return report
+#         return report

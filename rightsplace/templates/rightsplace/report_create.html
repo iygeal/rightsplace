@@ -3,103 +3,121 @@
 
 {% block title %}Submit Report — RightsPlace{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Drag & Drop Area */
+    #drop-area {
+        border: 2px dashed #6c757d;
+        border-radius: 10px;
+        padding: 40px;
+        text-align: center;
+        cursor: pointer;
+        background-color: #f8f9fa;
+        transition: border-color .3s ease, background-color .3s ease;
+    }
+    #drop-area.dragover {
+        border-color: #0d6efd;
+        background-color: #eaf2ff;
+    }
+
+    /* File List */
+    .file-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 12px;
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        margin-bottom: 6px;
+    }
+
+    .file-remove-btn {
+        border: none;
+        background: transparent;
+        color: #dc3545;
+        font-size: 20px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container py-5">
-    <h2 class="mb-4 fw-bold">Submit an Incident Report</h2>
+<div class="container py-4">
 
+    <!-- HEADER -->
+    <div class="text-center mb-4">
+        <h1 class="fw-bold">Submit a Report</h1>
+        <p class="text-muted">Provide details and attach files as supporting evidence</p>
+    </div>
+
+    <!-- MESSAGES -->
     {% if messages %}
-      {% for m in messages %}
-        <div class="alert alert-{{ m.tags|default:'info' }}">{{ m }}</div>
-      {% endfor %}
-    {% endif %}
-
-    {% if success %}
-        <div class="alert alert-success">
-            Your report has been submitted successfully.
+        <div>
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
         </div>
     {% endif %}
 
-    {% if form.non_field_errors %}
-      <div class="alert alert-danger">
-        {% for err in form.non_field_errors %}
-          <div>{{ err }}</div>
-        {% endfor %}
-      </div>
-    {% endif %}
+    <!-- REPORT FORM -->
+    <div class="card shadow-sm p-4">
+        <form id="reportForm" method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
 
-    <form id="reportForm" method="POST" enctype="multipart/form-data" novalidate>
-        {% csrf_token %}
+            <!-- Normal Form Fields -->
+            {{ form.non_field_errors }}
+            <div class="mb-3">
+                {{ form.title.label_tag }}
+                {{ form.title }}
+                {{ form.title.errors }}
+            </div>
 
-        <!-- TITLE -->
-        <div class="mb-3">
-            <label class="form-label">Title</label>
-            {{ form.title }}
-            {% if form.title.errors %}
-                <div class="text-danger small mt-1">
-                    {% for err in form.title.errors %}{{ err }}<br>{% endfor %}
-                </div>
-            {% endif %}
-        </div>
+            <div class="mb-3">
+                {{ form.description.label_tag }}
+                {{ form.description }}
+                {{ form.description.errors }}
+            </div>
 
-        <!-- DESCRIPTION -->
-        <div class="mb-3">
-            <label class="form-label">Description</label>
-            {{ form.description }}
-            {% if form.description.errors %}
-                <div class="text-danger small mt-1">
-                    {% for err in form.description.errors %}{{ err }}<br>{% endfor %}
-                </div>
-            {% endif %}
-        </div>
+            <div class="mb-3">
+                {{ form.category.label_tag }}
+                {{ form.category }}
+                {{ form.category.errors }}
+            </div>
 
-        <!-- CATEGORY -->
-        <div class="mb-3">
-            <label class="form-label">Category</label>
-            {{ form.category }}
-            {% if form.category.errors %}
-                <div class="text-danger small mt-1">
-                    {% for err in form.category.errors %}{{ err }}<br>{% endfor %}
-                </div>
-            {% endif %}
-        </div>
+            <div class="mb-3">
+                {{ form.incident_location.label_tag }}
+                {{ form.incident_location }}
+                {{ form.incident_location.errors }}
+            </div>
 
-        <!-- INCIDENT LOCATION -->
-        <div class="mb-3">
-            <label class="form-label">Incident Location</label>
-            {{ form.incident_location }}
-            {% if form.incident_location.errors %}
-                <div class="text-danger small mt-1">
-                    {% for err in form.incident_location.errors %}{{ err }}<br>{% endfor %}
-                </div>
-            {% endif %}
-        </div>
+            <!-- FILE UPLOAD FIELD (Hidden due to JS reinterface) -->
+            <div class="mb-3 d-none">
+                {{ form.evidence_files }}
+            </div>
 
-        <!-- HIDDEN DJANGO FILE FIELD -->
-        <div style="height:0; overflow:hidden; opacity:0; position:absolute;">
-            {{ form.evidence_files }}
-        </div>
+            <!-- Drag & Drop zone -->
+            <div id="drop-area" class="mb-3">
+                <h5 class="mb-2">Drag & drop files here</h5>
+                <p class="text-muted small">or click to select files</p>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="pick-files-btn">
+                    Choose Files
+                </button>
+            </div>
 
-        <!-- DRAG & DROP ZONE -->
-        <div id="dropZone"
-             class="border border-2 border-secondary rounded p-4 text-center bg-white mb-3"
-             style="cursor:pointer;">
-            <p class="text-muted mb-1">Drag & drop evidence files here, or click to select.</p>
-            <small class="text-muted">
-                You may upload images, video, audio, PDF, DOCX, XLSX, or TXT. Max 25 MB per file.
-            </small>
+            <!-- File List -->
+            <div id="file-list" class="mb-3"></div>
 
-            <!-- VISIBLE FILE INPUT -->
-            <input type="file" id="fileInput" multiple hidden aria-hidden="true">
-        </div>
+            <!-- Progress Bar -->
+            <div class="progress mb-3 d-none" id="upload-progress-container">
+                <div id="upload-progress" class="progress-bar" role="progressbar"
+                     style="width: 0%;">0%</div>
+            </div>
 
-        <!-- PREVIEW + ERRORS -->
-        <div id="fileArea">
-            <ul id="fileList" class="list-group mb-3"></ul>
-            <div id="fileErrors" class="text-danger small mb-3" style="display:none;"></div>
-        </div>
-
-        <button type="submit" class="btn btn-primary px-4">Submit Report</button>
-    </form>
+            <button type="submit" class="btn btn-primary w-100">Submit Report</button>
+        </form>
+    </div>
 </div>
 {% endblock %}
 
