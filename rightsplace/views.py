@@ -3,10 +3,6 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
-from .models import Evidence
-from django.http import JsonResponse
-from django.urls import reverse
-from django.views.decorators.http import require_http_methods
 from .forms import (
     ReporterRegistrationForm,
     LawyerRegistrationForm,
@@ -196,7 +192,7 @@ def report_create(request):
             )
             messages.success(
                 request, "Your report has been submitted successfully.")
-            return redirect("report_detail", report_id=report.id)
+            return redirect("index")
 
         # If invalid, show errors
         return render(request, "rightsplace/report_create.html", {

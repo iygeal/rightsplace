@@ -1,7 +1,3 @@
-// ======================================================================
-// report_create.js — FINAL FIXED VERSION
-// ======================================================================
-
 // DOM Elements
 const dropArea = document.getElementById('drop-area');
 const pickBtn = document.getElementById('pick-files-btn');
@@ -17,6 +13,7 @@ let filesBucket = [];
 // Refresh UI
 function refreshFileList() {
   fileList.innerHTML = '';
+
   filesBucket.forEach((file, index) => {
     const item = document.createElement('div');
     item.className = 'file-item';
@@ -48,6 +45,7 @@ function addFiles(newFiles) {
     }
     filesBucket.push(file);
   }
+
   refreshFileList();
   syncToInput();
 }
@@ -57,9 +55,11 @@ dropArea.addEventListener('dragover', (e) => {
   e.preventDefault();
   dropArea.classList.add('dragover');
 });
-dropArea.addEventListener('dragleave', () =>
-  dropArea.classList.remove('dragover')
-);
+
+dropArea.addEventListener('dragleave', () => {
+  dropArea.classList.remove('dragover');
+});
+
 dropArea.addEventListener('drop', (e) => {
   e.preventDefault();
   dropArea.classList.remove('dragover');
@@ -80,16 +80,12 @@ fileList.addEventListener('click', (e) => {
   }
 });
 
-// ======================================================================
-// FIXED FORM SUBMISSION LOGIC
-// Handles Django 302 redirects correctly
-// ======================================================================
 
+// FORM SUBMISSION LOGIC
 form.addEventListener('submit', function (event) {
   event.preventDefault();
 
   const url = form.action || window.location.href;
-
   const formData = new FormData(form);
 
   // Django-multiupload requires multiple "evidence_files"
@@ -108,9 +104,10 @@ form.addEventListener('submit', function (event) {
   const csrftoken = document.querySelector(
     "input[name='csrfmiddlewaretoken']"
   ).value;
+
   xhr.setRequestHeader('X-CSRFToken', csrftoken);
 
-  // Progress
+  // Upload progress
   xhr.upload.addEventListener('progress', (e) => {
     if (e.lengthComputable) {
       const percent = Math.round((e.loaded / e.total) * 100);
@@ -121,24 +118,41 @@ form.addEventListener('submit', function (event) {
 
   // SUCCESS HANDLER
   xhr.onload = () => {
-    // Case 1: Django success with redirect (most common)
-    if (xhr.status === 302) {
-      const redirectURL = xhr.getResponseHeader('Location');
-      if (redirectURL) window.location.href = redirectURL;
+    let response = null;
+
+    try {
+      response = JSON.parse(xhr.responseText);
+    } catch {
+      alert('Unexpected server response.');
       return;
     }
 
-    // Case 2: Normal 200/201 JSON or HTML response
-    if (xhr.status >= 200 && xhr.status < 300) {
-      window.location.href = window.location.href; // Reload page cleanly
+    if (xhr.status === 200 && response.success) {
+      // Redirect from server JSON
+      window.location.href = response.redirect_url;
       return;
     }
 
-    // Otherwise: error
+    // Validation errors
+    if (xhr.status === 400 && response.errors) {
+      let msg = 'Please correct the following:\n\n';
+
+      for (const [field, errs] of Object.entries(response.errors)) {
+        msg += `${field}: ${errs.join(', ')}\n`;
+      }
+
+      alert(msg);
+      return;
+    }
+
     alert('Upload failed. Please try again.');
   };
 
-  xhr.onerror = () => alert('An error occurred during upload.');
+  // Network error handler
+  xhr.onerror = () => {
+    alert('An error occurred during upload.');
+  };
 
+  // Send request
   xhr.send(formData);
 });
