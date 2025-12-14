@@ -1,16 +1,42 @@
 {% extends "rightsplace/layout.html" %}
 {% load static %}
 
-{% block title %}Submit Anonymous Report — RightsPlace{% endblock %}
+{% block title %}Report Anonymously — RightsPlace{% endblock %}
 
 {% block extra_css %}
 <style>
-    .section-card {
-        border-radius: 12px;
-        border: 1px solid #e3e3e3;
-        padding: 25px;
-        margin-bottom: 20px;
+    #drop-area {
+        border: 2px dashed #6c757d;
+        border-radius: 10px;
+        padding: 40px;
+        text-align: center;
+        cursor: pointer;
+        background-color: #f8f9fa;
+        transition: border-color .3s ease, background-color .3s ease;
+    }
+    #drop-area.dragover {
+        border-color: #0d6efd;
+        background-color: #eaf2ff;
+    }
+
+    .file-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 12px;
         background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        margin-bottom: 6px;
+    }
+
+    .file-remove-btn {
+        border: none;
+        background: transparent;
+        color: #dc3545;
+        font-size: 20px;
+        font-weight: bold;
+        cursor: pointer;
     }
 </style>
 {% endblock %}
@@ -18,88 +44,91 @@
 {% block content %}
 <div class="container py-4">
 
-    <div class="text-center mb-5">
-        <h1 class="fw-bold">Submit an Anonymous Report</h1>
+    <!-- HEADER -->
+    <div class="text-center mb-4">
+        <h1 class="fw-bold">Report Anonymously</h1>
         <p class="text-muted">
-            Your identity will not be collected or stored.
-            Provide only the information you're comfortable sharing.
+            Your identity will not be recorded. You may attach evidence if available.
         </p>
     </div>
 
-    <!-- Messages -->
-    {% if messages %}
-        <div class="mb-4">
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-            {% endfor %}
-        </div>
-    {% endif %}
+    <!-- SUCCESS MESSAGE (hidden by default) -->
+    <div id="success-box" class="alert alert-success d-none">
+        <h5 class="fw-bold mb-2">Report submitted successfully</h5>
+        <p class="mb-0">
+            Thank you for speaking up. Your report has been received and will be reviewed.
+        </p>
+    </div>
 
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
+    <!-- FORM CARD -->
+    <div class="card shadow-sm p-4" id="form-card">
+        <form id="anonymousReportForm" method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
 
-        <!-- =====================
-             REPORT DETAILS SECTION
-             ===================== -->
-        <div class="section-card shadow-sm">
-            <h4 class="mb-3">Report Details</h4>
+            {{ form.non_field_errors }}
 
-            {{ form.title.label_tag }}
-            {{ form.title }}
+            <div class="mb-3">
+                {{ form.title.label_tag }}
+                {{ form.title }}
+                {{ form.title.errors }}
+            </div>
 
-            {{ form.description.label_tag }}
-            {{ form.description }}
+            <div class="mb-3">
+                {{ form.description.label_tag }}
+                {{ form.description }}
+                {{ form.description.errors }}
+            </div>
 
-            {{ form.category.label_tag }}
-            {{ form.category }}
+            <div class="mb-3">
+                {{ form.category.label_tag }}
+                {{ form.category }}
+                {{ form.category.errors }}
+            </div>
 
-            {{ form.incident_location.label_tag }}
-            {{ form.incident_location }}
+            <div class="mb-3">
+                {{ form.incident_location.label_tag }}
+                {{ form.incident_location }}
+                {{ form.incident_location.errors }}
+            </div>
 
-            {{ form.evidence_files.label_tag }}
-            {{ form.evidence_files }}
-        </div>
+            <!-- Hidden Django file input -->
+            <div class="d-none">
+                {{ form.evidence_files }}
+            </div>
 
+            <!-- Drag & Drop -->
+            <div id="drop-area" class="mb-3">
+                <h6 class="mb-2">Drag & drop evidence files here</h6>
+                <p class="text-muted small mb-2">or click to select files</p>
+                <button type="button"
+                        class="btn btn-outline-secondary btn-sm"
+                        id="pick-files-btn">
+                    Choose Files
+                </button>
+            </div>
 
-        <!-- =============================
-             OPTIONAL CONTACT INFORMATION
-             ============================= -->
-        <div class="accordion mb-4" id="contactAccordion">
-            <div class="accordion-item">
-                <h2 class="accordion-header" id="contactHeading">
-                    <button class="accordion-button collapsed" type="button"
-                            data-bs-toggle="collapse"
-                            data-bs-target="#contactInfo">
-                        Optional: Provide Contact Information (if you want to be reached for follow-up or support)
-                    </button>
-                </h2>
+            <!-- File List -->
+            <div id="file-list" class="mb-3"></div>
 
-                <div id="contactInfo" class="accordion-collapse collapse"
-                     aria-labelledby="contactHeading"
-                     data-bs-parent="#contactAccordion">
-
-                    <div class="accordion-body">
-
-                        <p class="text-muted">
-                            If you want us to reach out for follow-up or support,
-                            you may provide your contact information.
-                        </p>
-
-                        {{ form.contact_email.label_tag }}
-                        {{ form.contact_email }}
-
-                        {{ form.contact_phone.label_tag }}
-                        {{ form.contact_phone }}
-
-                    </div>
+            <!-- Progress Bar -->
+            <div class="progress mb-3 d-none" id="upload-progress-container">
+                <div id="upload-progress"
+                     class="progress-bar"
+                     role="progressbar"
+                     style="width: 0%">
+                    0%
                 </div>
             </div>
-        </div>
 
-        <!-- Submit -->
-        <button class="btn btn-primary btn-lg w-100">Submit Report Anonymously</button>
-
-    </form>
+            <button type="submit" class="btn btn-primary w-100">
+                Submit Anonymous Report
+            </button>
+        </form>
+    </div>
 
 </div>
+{% endblock %}
+
+{% block script %}
+<script src="{% static 'rightsplace/anonymous_report.js' %}"></script>
 {% endblock %}

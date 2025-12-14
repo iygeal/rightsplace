@@ -1,14 +1,17 @@
 from urllib import request
 from django.shortcuts import render, redirect
+from django.http import JsonResponse
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_http_methods
 from .forms import (
     ReporterRegistrationForm,
     LawyerRegistrationForm,
     NGORegistrationForm,
     LoginForm,
     AuthenticatedReportForm,
+    AnonymousReportForm,
 )
 
 
@@ -148,59 +151,98 @@ def logout_view(request):
     return redirect("index")
 
 
+@require_http_methods(["GET", "POST"])
 def anonymous_report(request):
     """
-    Allows users to submit a report anonymously.
-    Evidence upload supported.
-    Contact information optional.
+    Anonymous report submission.
+
+    - GET  → render form
+    - POST → JSON response
     """
+
     if request.method == "POST":
-        form = AnonymousReportForm(request.POST, request.FILES)
+        form = AnonymousReportForm(
+            request.POST,
+            request.FILES
+        )
 
         if form.is_valid():
             report = form.save()
-            messages.success(
-                request,
-                "Your anonymous report has been submitted successfully. Thank you for speaking up."
-            )
-            return redirect("report_anonymous")
-        else:
-            messages.error(request, "Please correct the errors below.")
-    else:
-        form = AnonymousReportForm()
 
-    return render(request, "rightsplace/anonymous_report.html", {
-        "form": form
-    })
+            return JsonResponse(
+                {
+                    "success": True
+                },
+                status=200
+            )
+
+        # Form validation errors
+        errors = {
+            field: list(errs)
+            for field, errs in form.errors.items()
+        }
+
+        return JsonResponse(
+            {
+                "success": False,
+                "errors": errors
+            },
+            status=400
+        )
+
+
+    # GET request
+    form = AnonymousReportForm()
+    return render(
+        request,
+        "rightsplace/anonymous_report.html",
+        {"form": form}
+    )
 
 
 @login_required
+@require_http_methods(["GET", "POST"])
 def report_create(request):
     """
-    Create a report with multiple evidence files using django-multiupload.
+    Authenticated report submission.
+
+    - GET  → render form
+    - POST → JSON response
     """
     if request.method == "POST":
         form = AuthenticatedReportForm(
             request.POST,
-            request.FILES,
+            request.FILES
         )
 
         if form.is_valid():
-            report = form.save(
+            form.save(
                 commit=True,
                 reporter=request.user.userprofile
             )
-            messages.success(
-                request, "Your report has been submitted successfully.")
-            return redirect("index")
 
-        # If invalid, show errors
-        return render(request, "rightsplace/report_create.html", {
-            "form": form,
-        })
+            return JsonResponse(
+                {"success": True},
+                status=200
+            )
 
-    # GET request
+        errors = {
+            field: list(errs)
+            for field, errs in form.errors.items()
+        }
+
+        return JsonResponse(
+            {
+                "success": False,
+                "errors": errors
+            },
+            status=400
+        )
+
+    # GET
     form = AuthenticatedReportForm()
-    return render(request, "rightsplace/report_create.html", {
-        "form": form,
-    })
+    return render(
+        request,
+        "rightsplace/report_create.html",
+        {"form": form}
+    )

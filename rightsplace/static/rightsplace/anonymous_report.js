@@ -1,5 +1,5 @@
 // ======================================================================
-// report_create.js — CORRECTED & SAFE VERSION
+// anonymous_report.js — FINAL VERSION
 // ======================================================================
 
 // DOM Elements
@@ -7,12 +7,11 @@ const dropArea = document.getElementById('drop-area');
 const pickBtn = document.getElementById('pick-files-btn');
 const fileInput = document.querySelector("input[name='evidence_files']");
 const fileList = document.getElementById('file-list');
-const form = document.getElementById('reportForm');
+const form = document.getElementById('anonymousReportForm');
 const progressContainer = document.getElementById('upload-progress-container');
 const progressBar = document.getElementById('upload-progress');
 const successBox = document.getElementById('success-box');
 const formCard = document.getElementById('form-card');
-const submitBtn = form.querySelector("button[type='submit']");
 
 // Internal store
 let filesBucket = [];
@@ -23,12 +22,15 @@ let filesBucket = [];
 
 function refreshFileList() {
   fileList.innerHTML = '';
+
   filesBucket.forEach((file, index) => {
     const item = document.createElement('div');
     item.className = 'file-item';
     item.innerHTML = `
       <span>${file.name} (${Math.round(file.size / 1024)} KB)</span>
-      <button type="button" class="file-remove-btn" data-index="${index}">
+      <button type="button"
+              class="file-remove-btn"
+              data-index="${index}">
         &times;
       </button>
     `;
@@ -38,7 +40,7 @@ function refreshFileList() {
 
 function syncToInput() {
   const dt = new DataTransfer();
-  filesBucket.forEach((file) => dt.items.add(file));
+  filesBucket.forEach((f) => dt.items.add(f));
   fileInput.files = dt.files;
 }
 
@@ -85,7 +87,10 @@ dropArea.addEventListener('drop', (e) => {
 // ----------------------------------------------------------------------
 
 pickBtn.addEventListener('click', () => fileInput.click());
-fileInput.addEventListener('change', () => addFiles(fileInput.files));
+
+fileInput.addEventListener('change', () => {
+  addFiles(fileInput.files);
+});
 
 // ----------------------------------------------------------------------
 // Remove file
@@ -101,22 +106,20 @@ fileList.addEventListener('click', (e) => {
 });
 
 // ----------------------------------------------------------------------
-// Form submission
+// Form submission (AJAX, no redirect)
 // ----------------------------------------------------------------------
 
 form.addEventListener('submit', function (event) {
   event.preventDefault();
 
-  submitBtn.disabled = true;
-  submitBtn.textContent = 'Submitting...';
-
-  const url = form.action;
+  const url = form.action || window.location.href;
   const formData = new FormData(form);
 
-  // Multi-upload support
+  // Ensure multiple evidence_files entries
   formData.delete('evidence_files');
-  filesBucket.forEach((file) => formData.append('evidence_files', file));
+  filesBucket.forEach((f) => formData.append('evidence_files', f));
 
+  // Reset progress
   progressContainer.classList.remove('d-none');
   progressBar.style.width = '0%';
   progressBar.textContent = '0%';
@@ -130,7 +133,7 @@ form.addEventListener('submit', function (event) {
   ).value;
   xhr.setRequestHeader('X-CSRFToken', csrftoken);
 
-  // Progress
+  // Upload progress
   xhr.upload.addEventListener('progress', (e) => {
     if (e.lengthComputable) {
       const percent = Math.round((e.loaded / e.total) * 100);
@@ -145,16 +148,13 @@ form.addEventListener('submit', function (event) {
 
     try {
       response = JSON.parse(xhr.responseText);
-    } catch {
+    } catch (err) {
       alert('Unexpected server response.');
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Submit Report';
       return;
     }
 
     // SUCCESS
     if (xhr.status === 200 && response.success) {
-      // SHOW success UI — NO redirect
       formCard.classList.add('d-none');
       successBox.classList.remove('d-none');
       return;
@@ -163,22 +163,20 @@ form.addEventListener('submit', function (event) {
     // VALIDATION ERRORS
     if (xhr.status === 400 && response.errors) {
       let msg = 'Please correct the following:\n\n';
+
       for (const [field, errs] of Object.entries(response.errors)) {
         msg += `${field}: ${errs.join(', ')}\n`;
       }
+
       alert(msg);
-    } else {
-      alert('Upload failed. Please try again.');
+      return;
     }
 
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Submit Report';
+    alert('Submission failed. Please try again.');
   };
 
   xhr.onerror = () => {
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Submit Report';
-    alert('A network error occurred during upload.');
+    alert('Network error. Please check your connection.');
   };
 
   xhr.send(formData);

@@ -1,12 +1,16 @@
 """
-Forms for the RightsPlace platform.
+Forms used throughout the RightsPlace platform.
 
-This file contains:
- - LoginForm
- - ReporterRegistrationForm
- - AnonymousReportForm
- - LawyerRegistrationForm
- - NGORegistrationForm
+This module contains the following forms:
+ - ReporterRegistrationForm: registration for regular reporters
+ - AnonymousReportForm: form for anonymous users to submit reports
+ - LawyerRegistrationForm: registration for lawyers
+ - NGORegistrationForm: registration for NGOs
+  - LoginForm: login form for users
+  - AuthenticatedReportForm: form for authenticated users to submit reports
+    Each form includes necessary fields, validation logic, and save methods
+    to simplify form processing and to handle the creation of associated models.
+  - AnonymousReportForm: form for anonymous users to submit reports
 """
 
 from django import forms
@@ -15,52 +19,6 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from .models import UserProfile, Report, Evidence
 from multiupload.fields import MultiFileField, MultiUploadMetaInput
-
-# -------------------------------------------------------------------------
-# Login Form
-# -------------------------------------------------------------------------
-class LoginForm(forms.Form):
-    """
-    Custom login form allowing authentication via username or email.
-    """
-    identifier = forms.CharField(
-        label="Username or Email",
-        widget=forms.TextInput(
-            attrs={'placeholder': 'Enter username or email'})
-    )
-    password = forms.CharField(
-        widget=forms.PasswordInput(attrs={'placeholder': 'Enter password'})
-    )
-
-    def clean(self):
-        """
-        Attempt authentication using:
-            1. identifier as username
-            2. identifier as email → translated to username
-        """
-        cleaned = super().clean()
-        identifier = cleaned.get("identifier")
-        password = cleaned.get("password")
-
-        if identifier and password:
-            # Try logging in with username
-            user = authenticate(username=identifier, password=password)
-
-            if user is None:
-                # Try interpreting identifier as email
-                try:
-                    user_obj = User.objects.get(email=identifier)
-                    user = authenticate(
-                        username=user_obj.username, password=password)
-                except User.DoesNotExist:
-                    pass
-
-            if user is None:
-                raise ValidationError("Invalid username/email or password.")
-
-            cleaned["user"] = user
-
-        return cleaned
 
 
 # -------------------------------------------------------------------------
@@ -309,6 +267,53 @@ class NGORegistrationForm(forms.ModelForm):
         return profile
 
 
+# -------------------------------------------------------------------------
+# Login Form
+# -------------------------------------------------------------------------
+class LoginForm(forms.Form):
+    """
+    Custom login form allowing authentication via username or email.
+    """
+    identifier = forms.CharField(
+        label="Username or Email",
+        widget=forms.TextInput(
+            attrs={'placeholder': 'Enter username or email'})
+    )
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'placeholder': 'Enter password'})
+    )
+
+    def clean(self):
+        """
+        Attempt authentication using:
+            1. identifier as username
+            2. identifier as email → translated to username
+        """
+        cleaned = super().clean()
+        identifier = cleaned.get("identifier")
+        password = cleaned.get("password")
+
+        if identifier and password:
+            # Try logging in with username
+            user = authenticate(username=identifier, password=password)
+
+            if user is None:
+                # Try interpreting identifier as email
+                try:
+                    user_obj = User.objects.get(email=identifier)
+                    user = authenticate(
+                        username=user_obj.username, password=password)
+                except User.DoesNotExist:
+                    pass
+
+            if user is None:
+                raise ValidationError("Invalid username/email or password.")
+
+            cleaned["user"] = user
+
+        return cleaned
+
+
 class AuthenticatedReportForm(forms.ModelForm):
     """
     Form for authenticated users to submit reports.
@@ -394,72 +399,78 @@ class AuthenticatedReportForm(forms.ModelForm):
 
         return report
 
-# -----------------------------
-# AnonymousReportForm changes
-# -----------------------------
-# class AnonymousReportForm(forms.ModelForm):
-#     contact_email = forms.EmailField(required=False, widget=EMAIL_INPUT)
-#     contact_phone = forms.CharField(required=False, widget=TEXT_INPUT)
 
+class AnonymousReportForm(forms.ModelForm):
+    """
+    Form for anonymous users to submit reports.
 
-#     evidence_files = forms.FileField(
-#         required=False,
-#         widget=ClearableMultipleFileInput(attrs={
-#             "class": "form-control",
-#             "multiple": True,
-#             "id": "djangoFileInput",
-#         }),
-#         help_text="Upload supporting evidence files.",
-#     )
+    Uses django-multiupload for evidence files.
+    """
 
+    evidence_files = MultiFileField(
+        min_num=0,
+        max_num=20,
+        max_file_size=100 * 1024 * 1024,  # 100MB
+        required=False,
+        widget=FILE_INPUT_MULTI,
+        help_text="Upload supporting evidence files (max 100MB each)."
+    )
 
-#     class Meta:
-#         model = Report
-#         fields = ["title", "description", "category", "incident_location"]
-#         widgets = {
-#             "title": TEXT_INPUT,
-#             "description": TEXTAREA,
-#             "category": SELECT,
-#             "incident_location": TEXT_INPUT,
-#         }
+    class Meta:
+        model = Report
+        fields = ["title", "description", "category", "incident_location"]
+        widgets = {
+            "title": TEXT_INPUT,
+            "description": TEXTAREA,
+            "category": SELECT,
+            "incident_location": TEXT_INPUT,
+        }
 
-#     def clean_evidence_files(self):
-#         # reuse same validation logic as authenticated form
-#         files = self.files.getlist("evidence_files")
-#         # We can reuse code by instantiating an AuthenticatedReportForm-like validation,
-#         # but to keep it simple we replicate the same checks here.
+    def clean_evidence_files(self):
+        files = self.cleaned_data.get("evidence_files") or []
+        cleaned = []
+        errors = []
 
-#         allowed_prefixes = ("image/", "video/", "audio/")
-#         allowed_exact = {
-#             "application/pdf",
-#             "application/msword",
-#             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-#             "text/plain",
-#             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-#             "application/vnd.ms-excel",
-#         }
-#         max_bytes = 25 * 1024 * 1024
+        allowed_prefixes = ("image/", "video/", "audio/")
+        allowed_exact = {
+            "application/pdf",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/vnd.ms-excel",
+            "text/plain",
+        }
 
-#         errors = []
-#         cleaned = []
-#         for f in files:
-#             if f.size > max_bytes:
-#                 errors.append(
-#                     f'"{f.name}" is too large ({f.size} bytes). Max 25 MB.')
-#                 continue
-#             ctype = getattr(f, "content_type", "")
-#             if not (any(ctype.startswith(p) for p in allowed_prefixes) or ctype in allowed_exact):
-#                 errors.append(f'"{f.name}" has unsupported type "{ctype}".')
-#             cleaned.append(f)
+        for f in files:
+            ctype = getattr(f, "content_type", "")
+            size = getattr(f, "size", 0)
 
-#         if errors:
-#             raise ValidationError(errors)
-#         return cleaned
+            if size > 100 * 1024 * 1024:
+                errors.append(f'"{f.name}" exceeds 100 MB.')
+            elif not (
+                any(ctype.startswith(p) for p in allowed_prefixes)
+                or ctype in allowed_exact
+            ):
+                errors.append(f'"{f.name}" has unsupported type: "{ctype}".')
+            else:
+                cleaned.append(f)
 
-#     def save(self, commit=True):
-#         report = super().save(commit)
+        if errors:
+            raise ValidationError(errors)
 
-#         for f in self.cleaned_data.get("evidence_files", []):
-#             Evidence.objects.create(report=report, file=f)
+        return cleaned
 
-#         return report
+    def save(self, commit=True):
+        """
+        Saves anonymous report (reporter=None)
+        """
+        report = super().save(commit=False)
+        report.reporter = None
+
+        if commit:
+            report.save()
+
+        for f in self.cleaned_data.get("evidence_files", []):
+            Evidence.objects.create(report=report, file=f)
+
+        return report
