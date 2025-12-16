@@ -49,8 +49,8 @@
                     {% endif %}
 
                     {% if user.is_authenticated and user.userprofile.role == "user" %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'report_create' %}">
+                    <li>
+                        <a class="btn btn-outline-primary px-4 py-2 fw-semibold" href="{% url 'report_create' %}">
                             Submit Report
                         </a>
                     </li>
