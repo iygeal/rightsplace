@@ -1,6 +1,5 @@
-from urllib import request
 from django.shortcuts import render, redirect
-from django.http import JsonResponse
+from django.http import HttpResponseForbidden, JsonResponse
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
@@ -210,6 +209,11 @@ def report_create(request):
     - POST → JSON response
     """
     if request.method == "POST":
+        role = request.POST.get("role")
+        if role != "user":
+            return HttpResponseForbidden(
+                "You are not allowed to submit reports."
+            )
         form = AuthenticatedReportForm(
             request.POST,
             request.FILES

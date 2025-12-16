@@ -11,14 +11,17 @@
         <p class="lead mt-3">
             A safe platform for reporting human rights abuses and connecting with verified legal and NGO support.
         </p>
+        {% if not user.is_authenticated %}
         <div class="mt-4">
             <a href="{% url 'report_anonymous' %}" class="btn btn-danger btn-lg me-2">
                 Report Anonymously
             </a>
+
             <a href="{% url 'register' %}" class="btn btn-primary btn-lg">
                 Create an Account
             </a>
         </div>
+        {% endif %}
     </div>
 
     <!-- About Section -->
