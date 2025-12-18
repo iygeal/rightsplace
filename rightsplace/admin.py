@@ -27,11 +27,24 @@ class ReportAdmin(admin.ModelAdmin):
     - Search capability
     - Inline evidence management
     """
-    list_display = ('title', 'category', 'status', 'reporter', 'created_at')
+    list_display = (
+        'title', 'category', 'status',
+        'reporter', 'has_case', 'created_at'
+        )
     list_filter = ('category', 'status', 'created_at')
     search_fields = ('title', 'description', 'reporter__user__username')
     readonly_fields = ('created_at',)
     inlines = [EvidenceInline]  # Show evidence entries under each report
+
+    def has_case(self, obj):
+        """
+        Returns a boolean indicating whether the given Report has a Case associated with it.
+
+        This is used to generate a read-only column in the Report admin list view.
+        """
+        return hasattr(obj, 'case')
+    has_case.boolean = True
+    has_case.short_description = "Case Created?"
 
 
 @admin.register(Evidence)

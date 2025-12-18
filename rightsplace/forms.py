@@ -35,10 +35,23 @@ FILE_INPUT_MULTI = MultiUploadMetaInput(attrs={
 CHECKBOX = forms.CheckboxInput(attrs={"class": "form-check-input"})
 
 
+
+class CustomErrors(forms.ModelForm):
+    """Custom Error Messages for Required Fields"""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        for field in self.fields.values():
+            if field.required:
+                field.error_messages.setdefault(
+                    "required",
+                    f"{field.label} is required."
+                )
 # -------------------------------------------------------------------------
 # Reporter Registration Form
 # -------------------------------------------------------------------------
-class ReporterRegistrationForm(forms.ModelForm):
+class ReporterRegistrationForm(CustomErrors):
     """
     Registration for regular reporters (non-lawyers, non-NGO).
 
@@ -128,7 +141,7 @@ class ReporterRegistrationForm(forms.ModelForm):
 # -------------------------------------------------------------------------
 # Lawyer Registration Form
 # -------------------------------------------------------------------------
-class LawyerRegistrationForm(forms.ModelForm):
+class LawyerRegistrationForm(CustomErrors):
     """
     Registration for lawyers.
 
@@ -202,7 +215,7 @@ class LawyerRegistrationForm(forms.ModelForm):
 # -------------------------------------------------------------------------
 # NGO Registration Form
 # -------------------------------------------------------------------------
-class NGORegistrationForm(forms.ModelForm):
+class NGORegistrationForm(CustomErrors):
     """
     Registration for NGOs.
 
@@ -314,7 +327,7 @@ class LoginForm(forms.Form):
         return cleaned
 
 
-class AuthenticatedReportForm(forms.ModelForm):
+class AuthenticatedReportForm(CustomErrors):
     """
     Form for authenticated users to submit reports.
 
@@ -400,7 +413,7 @@ class AuthenticatedReportForm(forms.ModelForm):
         return report
 
 
-class AnonymousReportForm(forms.ModelForm):
+class AnonymousReportForm(CustomErrors):
     """
     Form for anonymous users to submit reports.
 
