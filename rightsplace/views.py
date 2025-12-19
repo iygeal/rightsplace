@@ -1,9 +1,10 @@
 from django.shortcuts import render, redirect
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseForbidden
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
+from .models import Case
 from .forms import (
     ReporterRegistrationForm,
     LawyerRegistrationForm,
@@ -258,4 +259,44 @@ def report_create(request):
         request,
         "rightsplace/report_create.html",
         {"form": form}
+    )
+
+
+@login_required
+def assigned_cases_dashboard(request):
+    """
+    Shared dashboard for Lawyers and NGOs.
+
+    - Lawyers see cases assigned to them
+    - NGOs see cases assigned to them
+    - Read-only access
+    """
+    profile = request.user.userprofile
+
+    if profile.role not in ("lawyer", "ngo"):
+        return HttpResponseForbidden(
+            "You are not authorized to view this page."
+        )
+
+    if profile.role == "lawyer":
+        cases = Case.objects.filter(
+            assigned_lawyer=profile
+        ).select_related("report", "report__reporter__user").prefetch_related(
+            "report__evidences"
+        )
+
+    else:  # NGO
+        cases = Case.objects.filter(
+            assigned_ngo=profile
+        ).select_related("report", "report__reporter__user").prefetch_related(
+            "report__evidences"
+        )
+
+    return render(
+        request,
+        "rightsplace/assigned_cases_dashboard.html",
+        {
+            "cases": cases,
+            "profile": profile,
+        }
     )

@@ -55,6 +55,15 @@
                         </a>
                     </li>
                     {% endif %}
+                    {% if user.is_authenticated and user.userprofile.role in "lawyer,ngo" %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'assigned_cases_dashboard' %}">
+                            Assigned Cases
+                        </a>
+                    </li>
+                    {% endif %}
+
+
                 </ul>
 
                 <!-- Right side nav: Auth controls -->
