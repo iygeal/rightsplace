@@ -4,7 +4,7 @@
 Assigned Cases
 {% endblock %}
 
-{% block body %}
+{% block content %}
 <div class="container mt-4">
 
     <h3>
@@ -53,7 +53,7 @@ Assigned Cases
                     <hr>
 
                     <h6>Evidence</h6>
-                    {% if case.report.evidences.all %}
+                    {% if case.report.evidences.exists %}
                         <ul>
                             {% for evidence in case.report.evidences.all %}
                                 <li>
