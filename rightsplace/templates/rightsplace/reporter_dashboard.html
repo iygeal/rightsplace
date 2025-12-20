@@ -1,0 +1,55 @@
+{% extends "rightsplace/layout.html" %}
+
+{% block title %}My Reports{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <h3>My Reports</h3>
+
+    {% if reports %}
+        {% for report in reports %}
+            <div class="card mb-3">
+                <div class="card-body">
+
+                    <h5 class="card-title">
+                        {{ report.title }}
+                    </h5>
+
+                    <p class="text-muted">
+                        Submitted on {{ report.created_at|date:"M d, Y" }}
+                    </p>
+
+                    <p>
+                        Status:
+                        <strong>{{ report.get_status_display }}</strong>
+                    </p>
+
+                    {% if report.case %}
+                        <p class="text-success">
+                            This report has been assigned and is being handled.
+                        </p>
+
+                        {% if report.case.status_update %}
+                            <p>
+                                <strong>Latest update:</strong><br>
+                                {{ report.case.status_update }}
+                            </p>
+                        {% endif %}
+                    {% else %}
+                        <p class="text-muted">
+                            Your report is awaiting review.
+                        </p>
+                    {% endif %}
+
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p class="text-muted">
+            You have not submitted any reports yet.
+        </p>
+    {% endif %}
+
+</div>
+{% endblock %}

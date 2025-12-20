@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
-from .models import Case
+from .models import Case, Report
 from .forms import (
     ReporterRegistrationForm,
     LawyerRegistrationForm,
@@ -298,5 +298,33 @@ def assigned_cases_dashboard(request):
         {
             "cases": cases,
             "profile": profile,
+        }
+    )
+
+
+@login_required
+def reporter_dashboard(request):
+    """
+    Dashboard for reporters to track their submitted reports.
+    """
+    profile = request.user.userprofile
+
+    if profile.role != "user":
+        return HttpResponseForbidden(
+            "Only reporters can access this page."
+        )
+
+    reports = (
+        Report.objects
+        .filter(reporter=profile)
+        .select_related("case")
+        .order_by("-created_at")
+    )
+
+    return render(
+        request,
+        "rightsplace/reporter_dashboard.html",
+        {
+            "reports": reports
         }
     )

@@ -10,4 +10,9 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
     path('report/anonymous/', views.anonymous_report, name='report_anonymous'),
     path("cases/assigned/", views.assigned_cases_dashboard, name="assigned_cases_dashboard"),
+    path(
+        "my-reports/",
+        views.reporter_dashboard,
+        name="reporter_dashboard"
+    )
 ]

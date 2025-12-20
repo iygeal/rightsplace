@@ -62,7 +62,14 @@
                         </a>
                     </li>
                     {% endif %}
-
+                    
+                    {% if user.is_authenticated and user.userprofile.role == "user" %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'reporter_dashboard' %}">
+                            My Reports
+                        </a>
+                    </li>
+                    {% endif %}
 
                 </ul>
 
