@@ -356,3 +356,33 @@ def verified_partners(request):
             "verified_ngos": verified_ngos,
         }
     )
+
+
+@login_required
+def reporter_cases(request):
+    """
+    Dashboard for reporters to track their submitted reports
+    and see whether they have progressed into cases.
+    """
+    profile = request.user.userprofile
+
+    if profile.role != "user":
+        return HttpResponseForbidden(
+            "Only reporters can view this page."
+        )
+
+    reports = (
+        Report.objects
+        .filter(reporter=profile,
+               case__isnull=False)
+        .select_related("case")
+        .order_by("-updated_at")
+    )
+
+    return render(
+        request,
+        "rightsplace/reporter_cases.html",
+        {
+            "reports": reports,
+        }
+    )

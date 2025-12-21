@@ -19,5 +19,10 @@ urlpatterns = [
         "partners/verified/",
         views.verified_partners,
         name="verified_partners"
-    )
+    ),
+    path(
+        "my-cases/",
+        views.reporter_cases,
+        name="reporter_cases"
+    ),
 ]
