@@ -64,15 +64,15 @@ class ReporterRegistrationForm(CustomErrors):
     username = forms.CharField(widget=TEXT_INPUT)
     password = forms.CharField(widget=PASSWORD_INPUT)
 
-    first_name = forms.CharField(required=False, widget=TEXT_INPUT)
-    last_name = forms.CharField(required=False, widget=TEXT_INPUT)
-    email = forms.EmailField(required=False, widget=EMAIL_INPUT)
+    first_name = forms.CharField(required=True, widget=TEXT_INPUT)
+    last_name = forms.CharField(required=True, widget=TEXT_INPUT)
+    email = forms.EmailField(required=True, widget=EMAIL_INPUT)
     phone_number = forms.CharField(required=False, widget=TEXT_INPUT)
 
     wants_contact = forms.BooleanField(
         required=False,
         widget=CHECKBOX,
-        help_text="Check if you want us to contact you for follow-up."
+        help_text="Check this if you want us to contact you for follow-up."
     )
 
     class Meta:
