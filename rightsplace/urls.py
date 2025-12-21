@@ -14,5 +14,10 @@ urlpatterns = [
         "my-reports/",
         views.reporter_dashboard,
         name="reporter_dashboard"
+    ),
+    path(
+        "partners/verified/",
+        views.verified_partners,
+        name="verified_partners"
     )
 ]

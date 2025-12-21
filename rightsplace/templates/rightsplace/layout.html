@@ -62,7 +62,7 @@
                         </a>
                     </li>
                     {% endif %}
-                    
+
                     {% if user.is_authenticated and user.userprofile.role == "user" %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'reporter_dashboard' %}">
@@ -70,6 +70,14 @@
                         </a>
                     </li>
                     {% endif %}
+                {% if user.is_authenticated %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'verified_partners' %}">
+                        Verified Partners
+                    </a>
+                </li>
+                {% endif %}
+
 
                 </ul>
 

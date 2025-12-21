@@ -1,0 +1,107 @@
+{% extends "rightsplace/layout.html" %}
+
+{% block title %}
+Verified Partners
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <h3 class="mb-4">Verified Partners</h3>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-3" id="partnersTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active"
+                    id="lawyers-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#lawyers"
+                    type="button"
+                    role="tab">
+                Lawyers
+            </button>
+        </li>
+
+        <li class="nav-item" role="presentation">
+            <button class="nav-link"
+                    id="ngos-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#ngos"
+                    type="button"
+                    role="tab">
+                NGOs
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+
+        <!-- Lawyers -->
+        <div class="tab-pane fade show active" id="lawyers" role="tabpanel">
+            {% if verified_lawyers %}
+                <div class="row">
+                    {% for lawyer in verified_lawyers %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-primary h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        {{ lawyer.user.get_full_name|default:lawyer.user.username }}
+                                    </h5>
+
+                                    <p class="mb-1">
+                                        <strong>Specialization:</strong>
+                                        {{ lawyer.specialization|default:"—" }}
+                                    </p>
+
+                                    <p class="mb-1">
+                                        <strong>Location:</strong>
+                                        {{ lawyer.city }}, {{ lawyer.state }}
+                                    </p>
+
+                                    <span class="badge bg-success">
+                                        Verified Lawyer
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted">No verified lawyers available.</p>
+            {% endif %}
+        </div>
+
+        <!-- NGOs -->
+        <div class="tab-pane fade" id="ngos" role="tabpanel">
+            {% if verified_ngos %}
+                <div class="row">
+                    {% for ngo in verified_ngos %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-primary h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        {{ ngo.organization_name }}
+                                    </h5>
+
+                                    <p class="mb-1">
+                                        <strong>Location:</strong>
+                                        {{ ngo.city }}, {{ ngo.state }}
+                                    </p>
+
+                                    <span class="badge bg-success">
+                                        Verified NGO
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted">No verified NGOs available.</p>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+{% endblock %}

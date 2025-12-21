@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
-from .models import Case, Report
+from .models import Case, Report, UserProfile
 from .forms import (
     ReporterRegistrationForm,
     LawyerRegistrationForm,
@@ -326,5 +326,33 @@ def reporter_dashboard(request):
         "rightsplace/reporter_dashboard.html",
         {
             "reports": reports
+        }
+    )
+
+
+@login_required
+def verified_partners(request):
+    """
+    Displays verified lawyers and NGOs.
+
+    - Accessible only to authenticated users
+    """
+
+    verified_lawyers = UserProfile.objects.filter(
+        role="lawyer",
+        is_verified=True
+    ).order_by("user__first_name", "user__last_name")
+
+    verified_ngos = UserProfile.objects.filter(
+        role="ngo",
+        is_verified=True
+    ).order_by("organization_name")
+
+    return render(
+        request,
+        "rightsplace/verified_partners.html",
+        {
+            "verified_lawyers": verified_lawyers,
+            "verified_ngos": verified_ngos,
         }
     )
