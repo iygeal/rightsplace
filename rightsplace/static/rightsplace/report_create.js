@@ -1,7 +1,3 @@
-// ======================================================================
-// report_create.js — CORRECTED & SAFE VERSION
-// ======================================================================
-
 // DOM Elements
 const dropArea = document.getElementById('drop-area');
 const pickBtn = document.getElementById('pick-files-btn');
@@ -21,6 +17,12 @@ let filesBucket = [];
 // UI helpers
 // ----------------------------------------------------------------------
 
+/**
+ * Refreshes the file list in the UI based on the filesBucket array.
+ * This function is called whenever the filesBucket array is modified.
+ * It iterates over the filesBucket array and appends a new file item to the
+ * fileList element for each file in the array.
+ */
 function refreshFileList() {
   fileList.innerHTML = '';
   filesBucket.forEach((file, index) => {
@@ -36,12 +38,27 @@ function refreshFileList() {
   });
 }
 
+/**
+ * Synchronizes the filesBucket array with the fileInput element.
+ * This function is called whenever the filesBucket array is modified.
+ * It creates a new DataTransfer object and adds each file in the filesBucket
+ * array to the DataTransfer object. It then assigns the DataTransfer object's
+ * files property to the fileInput element, effectively synchronizing the
+ * filesBucket array with the fileInput element.
+ */
 function syncToInput() {
   const dt = new DataTransfer();
   filesBucket.forEach((file) => dt.items.add(file));
   fileInput.files = dt.files;
 }
 
+/**
+ * Adds new files to the filesBucket array and refreshes the file list in the UI.
+ * If the filesBucket array already contains 20 files, it will display an alert
+ * and stop adding new files. If a file exceeds 100MB, it will display an alert
+ * and skip adding that file.
+ * @param {FileList} newFiles - The new files to be added to the filesBucket array.
+ */
 function addFiles(newFiles) {
   for (const file of newFiles) {
     if (filesBucket.length >= 20) {

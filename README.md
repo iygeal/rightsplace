@@ -16,7 +16,7 @@ The project also introduces a case lifecycle model, where reports may or may not
 
 RightsPlace integrates Django models, views, templates, admin customization, and JavaScript-enhanced form handling, while remaining mobile-responsive through Bootstrap styling. The combination of multi-role access control, real-world domain modeling, and administrative workflows makes this project significantly more complex and distinct than any prior assignment in the course.
 
-Additionally, the project implements multi-file evidence uploads using the django-multipleupload package. Supporting multiple evidence files per report required custom form handling, server-side processing of uploaded files, and relational modeling between reports and evidence. This functionality is not covered in the course material and significantly increased both the technical complexity and development time of the application.
+Additionally, the project implements multi-file evidence uploads using the django-multipleupload package, combined with custom client-side JavaScript. Users can add evidence files via both traditional file selection and drag-and-drop interactions. Supporting this required managing a client-side file bucket, synchronizing files with Django forms, handling upload progress feedback, and processing multiple files server-side with proper relational mapping between reports and evidence. This functionality is not covered in the course material and significantly increased both the technical complexity and development time of the application.
 
 ## Features
 
@@ -34,37 +34,37 @@ Additionally, the project implements multi-file evidence uploads using the djang
 
 ## File Structure and Description
 ### Project Root
-* `manage.py`: Django’s command-line utility for running the server, migrations, and administrative tasks.
-* `requirements.txt`: Lists Python dependencies required to run the application.
-* `media/`: A directory which stores uploaded evidence files associated with reports.
+* **`manage.py`**: Django’s command-line utility for running the server, migrations, and administrative tasks.
+* **`requirements.txt`**: Lists Python dependencies required to run the application.
+* **`media/**`**: A directory which stores uploaded evidence files associated with reports.
 
 ### rightsplace_project/ (Project Configuration)
-* `settings.py`: Contains global Django settings, including installed apps, database configuration, static and media settings.
-* `urls.py`: Root URL configuration that routes requests to the application URLs.
+* **`settings.py`**: Contains global Django settings, including installed apps, database configuration, static and media settings.
+* **`urls.py`**: Root URL configuration that routes requests to the application URLs.
 
 ### rightsplace/ (Main Application)
-* `models.py`: Defines the core data models: UserProfile, Report, Evidence, and Case, which together represent users, reports, uploaded evidence, and assigned legal cases.
-* `views.py`: Contains all application logic, including report submission, dashboards for reporters, lawyers, and NGOs, authentication handling, and partner listings.
-* `urls.py`: Maps application-specific URLs to their corresponding views.
-* `forms.py`: Defines Django forms for user registration and report creation, including centralized validation and error handling.
-* `admin.py`: Customizes the Django admin interface, including inline evidence management, role-based filtering, verification controls, and automated report status updates.
-* `apps.py`: Application configuration file for Django.
-* `migrations/`: Auto-generated database migration files reflecting changes to the data models.
+* **`models.py`**: Defines the core data models: UserProfile, Report, Evidence, and Case, which together represent users, reports, uploaded evidence, and assigned legal cases.
+* **`views.py`**: Contains all application logic, including report submission, dashboards for reporters, lawyers, and NGOs, authentication handling, and partner listings.
+* **`urls.py`**: Maps application-specific URLs to their corresponding views.
+* **`forms.py`**: Defines Django forms for user registration and report creation, including centralized validation and error handling.
+* **`admin.py`**: Customizes the Django admin interface, including inline evidence management, role-based filtering, verification controls, and automated report status updates.
+* **`apps.py`**: Application configuration file for Django.
+* **`migrations/`**: Auto-generated database migration files reflecting changes to the data models.
 
 ### Templates (rightsplace/templates/rightsplace/)
-* `layout.html`: Base template defining the site layout and navigation.
-* `index.html`: Homepage introducing the platform and its purpose.
-* `login.html` and register.html: Authentication-related templates.
-* `anonymous_report.html` and  `report_create.html`: Templates for submitting reports anonymously or as a registered user.
-* `reporter_dashboard.html`: Dashboard showing all reports submitted by a reporter.
-* `reporter_cases.html`: Dashboard showing only reports that have been converted into active cases for a reporter.
-* `assigned_cases_dashboard.html`: Read-only dashboard for lawyers and NGOs showing assigned cases.
-* `verified_partners.html`: Lists verified lawyers and NGOs for authenticated users.
+* **`layout.html`**: Base template defining the site layout and navigation.
+* **`index.html`**: Homepage introducing the platform and its purpose.
+* **`login.html`** and register.html: Authentication-related templates.
+* **`anonymous_report.html`** and  **`report_create.html`**: Templates for submitting reports anonymously or as a registered user.
+* **`reporter_dashboard.html`**: Dashboard showing all reports submitted by a reporter.
+* **`reporter_cases.html`**: Dashboard showing only reports that have been converted into active cases for a reporter.
+* **`assigned_cases_dashboard.html`**: Read-only dashboard for lawyers and NGOs showing assigned cases.
+* **`verified_partners.html`**: Lists verified lawyers and NGOs for authenticated users.
 
 ### Static Files (rightsplace/static/rightsplace/)
-* `anonymous_report.js`: Handles client-side validation and interactivity for anonymous reporting.
-* `report_create.js`: JavaScript enhancements for report creation forms.
-* `register.js`: Client-side logic for user registration.
+* **`anonymous_report.js`**: Handles client-side validation and interactivity for anonymous reporting.
+* **`report_create.js`**: JavaScript enhancements for report creation forms.
+* **`register.js`**: Client-side logic for user registration.
 
 ## How to Run the Application
 
@@ -87,9 +87,9 @@ Additionally, the project implements multi-file evidence uploads using the djang
     PGHOST=localhost
     PGPORT=5432
     ```
-    These variables are referenced in `settings.py` and loaded through `dotenv` to configure the database connection.
+    These variables are referenced in **`settings.py`** and loaded through **`dotenv`** to configure the database connection.
 
-    So, create a `.env` file in the root directory with these variables and proceed to step 4.
+    So, create a **`.env`** file in the root directory with these variables and proceed to step 4.
 
 4. Run database migrations:
     ```
