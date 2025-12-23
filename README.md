@@ -36,7 +36,7 @@ Additionally, the project implements multi-file evidence uploads using the djang
 ### Project Root
 * **`manage.py`**: Django’s command-line utility for running the server, migrations, and administrative tasks.
 * **`requirements.txt`**: Lists Python dependencies required to run the application.
-* **`media/**`**: A directory which stores uploaded evidence files associated with reports.
+* **`media/`**: A directory which stores uploaded evidence files associated with reports.
 
 ### rightsplace_project/ (Project Configuration)
 * **`settings.py`**: Contains global Django settings, including installed apps, database configuration, static and media settings.
