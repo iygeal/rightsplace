@@ -79,17 +79,40 @@ Additionally, the project implements multi-file evidence uploads using the djang
     ### Database Setup
     This project uses PostgreSQL as its database. PostgreSQL must be installed and running before the application can be started.
 
-    The following environment variables must be set before running database migrations:
+    #### Install PostgreSQL (on Ubuntu)
     ```
-    PGDATABASE=<database_name>
-    PGUSER=<database_user>
-    PGPASSWORD=<database_password>
+    sudo apt install postgresql postgresql-contrib
+    ```
+
+    #### Create a Database and User
+    ```
+    sudo -u postgres psql
+    ```
+
+    Then, run the following commands:
+
+    ```
+    CREATE DATABASE rightsplace;
+    CREATE USER rightsplace_user WITH PASSWORD 'password';
+    ALTER ROLE rightsplace_user SET client_encoding TO 'utf8';
+    ALTER ROLE rightsplace_user SET default_transaction_isolation TO 'read committed';
+    ALTER ROLE rightsplace_user SET timezone TO 'UTC';
+    GRANT ALL PRIVILEGES ON DATABASE rightsplace TO rightsplace_user;
+    ```
+    Exit the psql prompt by typing **`\q`**.
+
+    #### Set Environment Variables
+    Create a **`.env`** file in the root directory and add the following variables:
+    ```
+    PGDATABASE=rightsplace
+    PGUSER=rightsplace_user
+    PGPASSWORD=password
     PGHOST=localhost
     PGPORT=5432
     ```
     These variables are referenced in **`settings.py`** and loaded through **`dotenv`** to configure the database connection.
 
-    So, create a **`.env`** file in the root directory with these variables and proceed to step 4.
+    Proceed to step 4.
 
 4. Run database migrations:
     ```
