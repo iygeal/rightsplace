@@ -38,7 +38,7 @@ CHECKBOX = forms.CheckboxInput(attrs={"class": "form-check-input"})
 
 
 class CustomErrors(forms.ModelForm):
-    """Custom Error Messages for Required Fields"""
+    """Custom Error Messages for Required Fields and Shared Validations."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
