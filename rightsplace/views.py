@@ -49,8 +49,11 @@ def register(request):
     lawyer_form = LawyerRegistrationForm()
     ngo_form = NGORegistrationForm()
 
+    selected_role = None
+
     if request.method == "POST":
         role = request.POST.get("role")  # Determine which form was submitted
+        selected_role = role  # To keep the selected form visible on errors
 
         # ------------------------------------------------------------------
         # Handle Reporter Registration
@@ -105,6 +108,7 @@ def register(request):
             "reporter_form": reporter_form,
             "lawyer_form": lawyer_form,
             "ngo_form": ngo_form,
+            "selected_role": selected_role,
         },
     )
 

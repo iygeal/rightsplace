@@ -14,6 +14,7 @@ This module contains the following forms:
 """
 
 from django import forms
+from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -48,6 +49,40 @@ class CustomErrors(forms.ModelForm):
                     "required",
                     f"{field.label} is required."
                 )
+
+    def clean_username(self):
+        if "username" not in self.cleaned_data:
+            return None
+
+        username = self.cleaned_data.get("username")
+
+        qs = User.objects.filter(username=username)
+
+        # Allow updates without false positives
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+
+        if qs.exists():
+            raise forms.ValidationError("This username is already taken.")
+
+        return username
+
+    def clean_email(self):
+        if "email" not in self.cleaned_data:
+            return None
+
+        email = self.cleaned_data.get("email")
+
+        qs = User.objects.filter(email=email)
+
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+
+        if qs.exists():
+            raise forms.ValidationError(
+                "This email address is already registered.")
+
+        return email
 # -------------------------------------------------------------------------
 # Reporter Registration Form
 # -------------------------------------------------------------------------

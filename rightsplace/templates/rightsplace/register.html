@@ -16,6 +16,13 @@
     .hidden {
         display: none;
     }
+
+    .errorlist {
+        color: red;
+        font-weight: bold;
+        margin: 0 0 0.5em 0;
+        padding-left: 1em;
+    }
 </style>
 {% endblock %}
 
@@ -27,7 +34,6 @@
         <h1 class="fw-bold">Create an Account</h1>
         <p class="text-muted">Choose the type of account you want to create</p>
     </div>
-
 
     <!-- Role Selection -->
     <div class="row justify-content-center mb-4">
@@ -67,18 +73,19 @@
         </div>
     {% endif %}
 
-
     <!-- ================================
          FORMS (Initially Hidden)
          ================================ -->
 
     <!-- Reporter Form -->
-    <div id="form-user" class="hidden">
+    <div id="form-user" class="{% if reporter_form.errors %} {% else %}hidden{% endif %}">
         <div class="card shadow-sm p-4">
             <h4 class="mb-4">Reporter Registration</h4>
 
             <form method="post">
                 {% csrf_token %}
+                <!-- Track role for backend -->
+                <input type="hidden" name="role" value="user">
                 {{ reporter_form.as_p }}
                 <button class="btn btn-primary mt-3">Register</button>
             </form>
@@ -86,12 +93,14 @@
     </div>
 
     <!-- Lawyer Form -->
-    <div id="form-lawyer" class="hidden">
+    <div id="form-lawyer" class="{% if lawyer_form.errors %} {% else %}hidden{% endif %}">
         <div class="card shadow-sm p-4">
             <h4 class="mb-4">Lawyer Registration</h4>
 
             <form method="post">
                 {% csrf_token %}
+                <!-- Track role for backend -->
+                <input type="hidden" name="role" value="lawyer">
                 {{ lawyer_form.as_p }}
                 <button class="btn btn-primary mt-3">Register</button>
             </form>
@@ -99,12 +108,14 @@
     </div>
 
     <!-- NGO Form -->
-    <div id="form-ngo" class="hidden">
+    <div id="form-ngo" class="{% if ngo_form.errors %} {% else %}hidden{% endif %}">
         <div class="card shadow-sm p-4">
             <h4 class="mb-4">NGO Registration</h4>
 
             <form method="post">
                 {% csrf_token %}
+                <!-- Track role for backend -->
+                <input type="hidden" name="role" value="ngo">
                 {{ ngo_form.as_p }}
                 <button class="btn btn-primary mt-3">Register</button>
             </form>
@@ -112,7 +123,22 @@
     </div>
 
 </div>
+
 {% block script %}
 <script src="{% static 'rightsplace/register.js' %}"></script>
+
+<!-- Auto-show form if there are validation errors -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    {% if reporter_form.errors %}
+        selectRole('user');
+    {% elif lawyer_form.errors %}
+        selectRole('lawyer');
+    {% elif ngo_form.errors %}
+        selectRole('ngo');
+    {% endif %}
+});
+</script>
+
 {% endblock %}
 {% endblock %}
