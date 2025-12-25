@@ -1,7 +1,3 @@
-// ======================================================================
-// anonymous_report.js — FINAL VERSION
-// ======================================================================
-
 // DOM Elements
 const dropArea = document.getElementById('drop-area');
 const pickBtn = document.getElementById('pick-files-btn');
@@ -105,9 +101,7 @@ fileList.addEventListener('click', (e) => {
   }
 });
 
-// ----------------------------------------------------------------------
-// Form submission (AJAX, no redirect)
-// ----------------------------------------------------------------------
+
 
 form.addEventListener('submit', function (event) {
   event.preventDefault();

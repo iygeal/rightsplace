@@ -12,7 +12,7 @@ RightsPlace is intentionally distinct from all other projects in CS50W. It is no
 
 Unlike earlier course projects, RightsPlace implements a role-based workflow system with clearly defined user responsibilities and permissions. Users interact with the platform differently depending on whether they are reporters, lawyers, NGOs, or administrators. Reports transition through multiple states (e.g., pending, in progress, resolved), and these transitions are controlled through administrative actions rather than direct user interaction.
 
-The project also introduces a case lifecycle model, where reports may or may not become cases, and where cases are tracked independently of their originating reports. This adds a layer of domain complexity beyond simple CRUD operations. Administrative verification of lawyers and NGOs, restricted case assignment, and automated status updates further increase the application’s complexity.
+The project also introduces a case lifecycle model, where reports may or may not become cases, and where cases are tracked independently of their originating reports. This adds domain complexity beyond simple CRUD operations. Administrative verification of lawyers and NGOs, restricted case assignment, and automated status updates further increase the application’s complexity.
 
 RightsPlace integrates Django models, views, templates, admin customization, and JavaScript-enhanced form handling, while remaining mobile-responsive through Bootstrap styling. The combination of multi-role access control, real-world domain modeling, and administrative workflows makes this project significantly more complex and distinct than any prior assignment in the course.
 
@@ -138,7 +138,7 @@ Additionally, the project implements multi-file evidence uploads using the djang
 
 7. Access the application at http://127.0.0.1:8000 in your web browser.
 
-8. The admin interface can be accessed at http://127.0.0.1:8000/admin/, where adminitsrators can verify lawyers and NGOs and manage cases.
+8. The admin interface can be accessed at http://127.0.0.1:8000/admin/, where administrators can verify lawyers and NGOs and manage cases.
 
 
 ## Additional Notes

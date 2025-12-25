@@ -26,8 +26,8 @@ class UserProfileAdmin(admin.ModelAdmin):
     # Allows admin to verify lawyers/NGOs directly from list view
     list_editable = ('is_verified',)
 
-    # Important: Show non-editable user metadata cleanly
-    autocomplete_fields = ('user',)  # Helpful when user list is large
+    # Show non-editable user metadata cleanly
+    autocomplete_fields = ('user',)
 
     def get_readonly_fields(self, request, obj=None):
         """Make is_verified a readonly field for reporters
