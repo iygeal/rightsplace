@@ -69,8 +69,15 @@ Additionally, the project implements multi-file evidence uploads using the djang
 ## How to Run the Application
 
 1. Clone the repository.
+    ```
+    git clone https://github.com/iygeal/rightsplace.git
+    ```
 
 2. Create and activate a virtual environment.
+    ```
+    python3 -m venv venv
+    source venv/bin/activate
+    ```
 
 3. Install dependencies:
     ```
@@ -84,7 +91,7 @@ Additionally, the project implements multi-file evidence uploads using the djang
     sudo apt install postgresql postgresql-contrib
     ```
 
-    #### Create a Database and User
+    #### Create a Test Database and a Test User to Test the Application
     ```
     sudo -u postgres psql
     ```
